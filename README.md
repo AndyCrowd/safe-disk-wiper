@@ -3,7 +3,7 @@ Using additional security checks to avoid wiping of mounted partitions.
 
 It is dangerous to wipe a device directly from your working system because if you occasionally will mistyped destination device it will destroy it!
 
-The script will help you by doing checks
+The script will help you by doing checks before starting to wipe them.
 
 Options:
 wipe-safe [options] "/dev/path_to_device"

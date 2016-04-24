@@ -1,7 +1,7 @@
 #/bin/bash
 #
 #Script: License: GPL
-#Patterns: are from forums and wiki
+#Patterns: are from forums, wiki and belongs to their authors
 #
 #Author: Andy Crowd
 #PathToDevice='/dev/sdX(Y)'
@@ -39,6 +39,10 @@ wipe-safe [options] "/dev/path_to_device"
 		Default = max'	
 exit 0
 	}
+
+if [[ -z "$1" ]];then
+help_options
+fi
 
 for cmd_check in "$@";do
 ((GetNext++));

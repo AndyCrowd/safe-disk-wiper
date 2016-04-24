@@ -6,24 +6,6 @@
 #Author: Andy Crowd
 #PathToDevice='/dev/sdX(Y)'
 
-cmd_Options=("$@")
-cmd_last_option="((${#cmd_Options[@]}-1))"
-
-PathToDevice="${cmd_Options[cmd_last_option]}"
-
-#PathToDevice="$1"
-RepeatWipes="0"
-ASK_confirm="1"
-be_safe='max'
-
-#echo 'You must edit the script:
-# 1) Uncomment or add own wiping patterns.
-# 2) Adjust settings in variables:
-#   RepeatWipes="0"
-#   ASK_confirm="1"'
-#   echo 'Press ENTER to continue!'
-#read
-
 help_options(){
 echo 'Options:
 wipe-safe [options] "/dev/path_to_device"
@@ -43,6 +25,24 @@ exit 0
 if [[ -z "$1" ]];then
 help_options
 fi
+
+cmd_Options=("$@")
+cmd_last_option="((${#cmd_Options[@]}-1))"
+
+PathToDevice="${cmd_Options[cmd_last_option]}"
+
+#PathToDevice="$1"
+RepeatWipes="0"
+ASK_confirm="1"
+be_safe='max'
+
+#echo 'You must edit the script:
+# 1) Uncomment or add own wiping patterns.
+# 2) Adjust settings in variables:
+#   RepeatWipes="0"
+#   ASK_confirm="1"'
+#   echo 'Press ENTER to continue!'
+#read
 
 for cmd_check in "$@";do
 ((GetNext++));

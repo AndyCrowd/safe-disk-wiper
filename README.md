@@ -9,11 +9,19 @@ Options:
 wipe-safe [options] "/dev/path_to_device"
 
 -a , --add-wipe-loop [number]	- set amount of additional loops
-#br		Defaut = 0
+
+		Defaut = 0
+
 -c , --confirm [yes/1 , no/0]	- disable confirmation before continue
+
 		Default = yes
+
 -s , --safety [0/disable , 1/low , 2/max]	- set safety level
+
 	0/disable	- will not check if any of the partitions is mounted
+
 	1/low       - will stop only if destination partition is mounted
+
 	2/max       - will stop if at least one partition is mounted
+
 		Default = max

@@ -1,0 +1,300 @@
+#/bin/bash
+#
+#Script: License: GPL
+#Patterns: are from forums and wiki
+#
+#Author: Andy Crowd
+#PathToDevice='/dev/sdX(Y)'
+
+cmd_Options=("$@")
+cmd_last_option="((${#cmd_Options[@]}-1))"
+
+PathToDevice="${cmd_Options[cmd_last_option]}"
+
+#PathToDevice="$1"
+RepeatWipes="0"
+ASK_confirm="1"
+be_safe='max'
+
+#echo 'You must edit the script:
+# 1) Uncomment or add own wiping patterns.
+# 2) Adjust settings in variables:
+#   RepeatWipes="0"
+#   ASK_confirm="1"'
+#   echo 'Press ENTER to continue!'
+#read
+
+help_options(){
+echo 'Options:
+wipe-safe [options] "/dev/path_to_device"
+
+-a , --add-wipe-loop [number]	- set amount of additional loops
+		Defaut = 0
+-c , --confirm [yes/1 , no/0]	- disable confirmation before continue
+		Default = yes
+-s , --safety [0/disable , 1/low , 2/max]	- set safety level
+	0/disable	- will not check if any of the partitions is mounted
+	1/low       - will stop only if destination partition is mounted
+	2/max       - will stop if at least one partition is mounted
+		Default = max'	
+exit 0
+	}
+
+for cmd_check in "$@";do
+((GetNext++));
+	case "$cmd_check" in
+-h | --help )
+	help_options
+	;;
+-a | --add-wipe-loop)
+	NumberWipe='^[0-9]+$';
+if [[ "${cmd_Options[GetNext]}" =~ $NumberWipe ]];
+	then
+
+echo 'AAAAAAAiAA:::::::::::: ' "${cmd_Options[GetNext]}";
+
+fi
+	;;
+-c | --confirm)
+# NumberConfirm='^[0-1]+$';
+if [[ "${cmd_Options[GetNext]}" =~ "1" || ${cmd_Options[GetNext],,} == "yes" || ${cmd_Options[GetNext],,} == "y" ]];
+	then
+ASK_confirm="1"
+echo 'YES YES:::::::::::: ' "${cmd_Options[GetNext]}";
+
+	else
+
+		if [[ "${cmd_Options[GetNext]}" == "0" || ${cmd_Options[GetNext],,} == "no" || ${cmd_Options[GetNext],,} == "n" ]];
+			then
+ASK_confirm="0"
+echo 'NO NO:::::::::::: ' "${cmd_Options[GetNext]}";
+		else
+		echo 'Wrong parameter to "confirm"
+correct are: 1 / yes , 0 / no'
+exit
+	fi
+fi
+	;;
+-a | --add-wipe-loop)
+	# NumberWipe='^[0-9]+$';
+if [[ "${cmd_Options[GetNext]}" =~ $NumberWipe ]];
+	then
+
+echo 'AAAAAAAiAA:::::::::::: ' "${cmd_Options[GetNext]}";
+
+fi
+	;;
+-s | --safety)
+# NumberConfirm='^[0-1]+$';
+if [[ "${cmd_Options[GetNext]}" =~ "0" || ${cmd_Options[GetNext],,} == "disable" || ${cmd_Options[GetNext],,} == "d" || ${cmd_Options[GetNext],,} == "no" || ${cmd_Options[GetNext],,} == "n" ]];
+	then
+be_safe="no"
+	else
+		if [[ "${cmd_Options[GetNext]}" == "1" || ${cmd_Options[GetNext],,} == "low" || ${cmd_Options[GetNext],,} == "l" ]];
+			then
+be_safe="low"
+		else
+			if [[ "${cmd_Options[GetNext]}" == "2" || ${cmd_Options[GetNext],,} == "high" || ${cmd_Options[GetNext],,} == "h" || ${cmd_Options[GetNext],,} == "max" || ${cmd_Options[GetNext],,} == "m" ]];
+				then
+be_safe="max"
+			else
+echo 'Wrong parameter to "safety"
+correct are: 
+0 / disabled / d / no / n
+1 / low / l
+2 / max / m / high / h'
+		fi
+	fi
+fi
+	;;
+
+	esac
+done
+#keywait
+#
+# TESTED ONLY IN ARCH LINUX
+#
+
+# Use on:
+# Partition = Logical sectors only
+# Disk = Physical sectors or Logical sectors
+
+DeviceName="${PathToDevice/[0-9$]/}"
+
+if [ ! -z "${PathToDevice}"  ];then
+if [ -b "${DeviceName}" ] ;then
+CC='[0-9]+$';
+
+UsePhysBlockSize=$(cat /sys/block/"${DeviceName##*/}"/queue/physical_block_size)
+UseLogicBlockSize=$(cat /sys/block/"${DeviceName##*/}"/queue/logical_block_size)
+if [[ "${PathToDevice}" =~ $CC ]];then
+#PartAlignmentOffset=$(cat /sys/block/${DeviceName##*/}/${PathToDevice##*/}/alignment_offset)
+#PartAlignmentOffset=0
+PartStart=$(cat /sys/block/"${DeviceName##*/}/${PathToDevice##*/}"/start)
+PartSectors=$(cat /sys/block/"${DeviceName##*/}/${PathToDevice##*/}"/size)
+PartInByteSize=$((UseLogicBlockSize * PartSectors))
+
+echo "The ${PathToDevice} Is partition of the: ${DeviceName} 
+UseLogicBlockSize = ${UseLogicBlockSize}
+PartStart = ${PartStart} 
+PartSectors = ${PartSectors}  
+PartInByteSize = ${PartInByteSize}"
+
+ISMounted="$(lsblk /dev/${PathToDevice##*/} -o "NAME,MOUNTPOINT" | grep /)"
+if [[ ! -z "$ISMounted"  ]];then
+case "$be_safe" in
+low ) 
+	echo '!!! Not allowed to wipe! Partition is mounted:'
+	echo "$ISMounted"
+	echo 'Unmount and try again!'
+	exit 1
+	;;
+max )
+ISMounted="$(lsblk /dev/${DeviceName##*/}  -o "NAME,MOUNTPOINT" | grep /)"
+	echo '!!! Not allowed to wipe! At least one partition is mounted:'
+	echo "$ISMounted"
+	echo 'Unmount all and try again!'
+	exit 1
+;;
+no )
+	echo 'WARNING safety is disabled'
+	;;
+esac
+fi
+
+if [ "$ASK_confirm" == "1"  ];then
+read -r -p "Continue to run patterns to Destroy PARTITION /dev/${PathToDevice##*/}? [y/N] " answer
+answer=${answer,,}
+if [[ $answer =~ ^(yes|y)$ ]];then
+ASK_confirm="0"
+else
+echo Canceled !!!
+fi
+fi
+
+if [ ${ASK_confirm} == "0"  ];then
+echo Starting at:
+date
+
+for (( count=0; count<=RepeatWipes; count++ ));do
+echo "The single partition wipe - round: ${RepeatWipes}"
+
+#openssl enc -aes-256-ctr -pass pass:"$(dd if=/dev/random bs=128 count=1 2>/dev/null | base64)" -nosalt </dev/zero \
+#| pv -bartpes ${PartInByteSize} |
+#dd bs=${UseLogicBlockSize} count=${PartSectors} of=/dev/${DeviceName##*/} \ 
+#seek=$((PartStart + PartAlignmentOffset)) oflag=direct iflag=nocache 
+
+#dd if=/dev/urandom bs=${UseLogicBlockSize} count=${PartSectors} |
+#pv -bartpes ${PartInByteSize} |
+#dd of=/dev/${DeviceName##*/} bs=${UseLogicBlockSize} \
+#seek=$((PartStart + PartAlignmentOffset)) oflag=direct iflag=nocache
+
+#dd if=/dev/zero bs=${UseLogicBlockSize} count=${PartSectors} |
+#pv -bartpes ${PartInByteSize} | 
+#dd of=/dev/${DeviceName##*/} bs=${UseLogicBlockSize} \ 
+#seek=${PartStart} oflag=direct iflag=nocache
+
+done
+
+echo Finished at:
+date
+
+fi
+
+else 
+
+partprobe "${PathToDevice}"
+
+DeviceLogicSectors=$(cat /sys/block/"${DeviceName##*/}"/size)
+DeviceInByteSize=$((UseLogicBlockSize * DeviceLogicSectors))
+DevicePhysSectors=$((DeviceInByteSize / UsePhysBlockSize))
+
+echo "The ${PathToDevice} is a device'!'
+UseLogicBlockSize = ${UseLogicBlockSize}
+DeviceLogicSectors = ${DeviceLogicSectors}
+DeviceInByteSize = ${DeviceInByteSize}
+_
+UsePhysBlockSize = ${UsePhysBlockSize}
+DevicePhysSectors = ${DevicePhysSectors}
+DeviceInByteSize = ${DeviceInByteSize}"
+
+ISMounted="$(lsblk /dev/${PathToDevice##*/}  -o "NAME,MOUNTPOINT" | grep /)"
+if [[ ! -z "$ISMounted"  ]];
+	then
+	case "$be_safe" in
+max | low ) 
+	echo '!!! Not allowed to wipe! At least one partition is mounted:'
+	echo "$ISMounted"
+	echo 'Unmount and try again!'
+	exit 1
+	;;
+no )
+	echo 'Warning safety is disabled'
+	;;
+	esac
+fi
+
+if [ "$ASK_confirm" == "1"  ];then
+read -r -p "Continue to run patterns to WIPE DEVICE /dev/${DeviceName##*/}? [y/N] " answer
+answer=${answer,,}
+if [[ $answer =~ ^(yes|y)$ ]];then
+ASK_confirm="0"
+else
+echo Canceled !!!
+fi
+fi
+
+if [ ${ASK_confirm} == "0"  ];then
+echo Starting at:
+date
+
+for (( count=0; count<=RepeatWipes; count++ ));do
+echo "The whole devce wipe - round: ${RepeatWipes}"
+#wipefs -a ${PathToDevice}
+
+#
+# Use Logical Block Size
+#
+#dd if=/dev/zero bs=${UseLogicBlockSize} count=${DeviceLogicSectors} | pv -bartpes ${DeviceInByteSize} | 
+#dd of=/dev/${DeviceName##*/} seek=0 oflag=direct iflag=nocache bs=${UseLogicBlockSize}
+
+#
+# Use Physical Block Size & compressed randomized data.
+# High CPU usage but might be good to use on SSD. 
+#
+#dd if=/dev/urandom bs=${UsePhysBlockSize} \
+#| gzip | bzip2 | xz -9 --format=raw | pv -bartpes ${DeviceInByteSize} \ 
+#| dd of=/dev/${DeviceName##*/} seek=0 oflag=direct iflag=nocache bs=${UsePhysBlockSize} \
+#count=${DevicePhysSectors}
+
+#
+# Use Physical Block Size & compressed AES-ssl data.
+# High CPU usage but might be good to use on SSD. 
+#
+#openssl enc -aes-256-ctr -pass pass:"$(dd if=/dev/random bs=128 \
+#count=1 2>/dev/null | base64)" -nosalt </dev/zero | xz -9 --format=raw | pv -bartpes ${DeviceInByteSize} \ 
+#| dd of=/dev/${DeviceName##*/} seek=0 oflag=direct iflag=nocache bs=${UsePhysBlockSize} \ 
+#count=${DevicePhysSectors}
+
+#
+# Use Physical Block Size & zeros
+#
+#dd if=/dev/zero bs=${UsePhysBlockSize} | pv -bartpes ${DeviceInByteSize} |
+#dd of=/dev/${DeviceName##*/} seek=0 oflag=direct iflag=nocache bs=${UsePhysBlockSize} \ 
+#count=${DevicePhysSectors}
+
+done
+echo Finished at:
+date
+
+fi;
+fi;
+
+#To verify after filled in disk with zeros
+#hexdump "${PathToDevice}"
+else echo 'Is not a block/storage device!'
+fi;
+else echo 'No block device is specified! Use something like /dev/sdX(Y)'
+lsblk -o SIZE,NAME,FSTYPE,MODEL
+echo chose one from above to destroy
+fi;

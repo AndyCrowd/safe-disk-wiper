@@ -50,14 +50,17 @@ for cmd_check in "$@";do
 -h | --help )
 	help_options
 	;;
--a | --add-wipe-loop)
+-a | --add-wipe-loop )
 	NumberWipe='^[0-9]+$';
 if [[ "${cmd_Options[GetNext]}" =~ $NumberWipe ]];
 	then
-
-echo 'AAAAAAAiAA:::::::::::: ' "${cmd_Options[GetNext]}";
+RepeatWipes="${cmd_Options[GetNext]}"
+#echo 'AAAAAAAiAA:::::::::::: ' "${cmd_Options[GetNext]}";
 
 fi
+	;;
+-o | --order )
+WipeOrder=(${cmd_Options[GetNext]//,/ })
 	;;
 -c | --confirm)
 # NumberConfirm='^[0-1]+$';
@@ -181,14 +184,69 @@ echo Starting at:
 date
 
 for (( count=0; count<=RepeatWipes; count++ ));do
-echo "The single partition wipe - round: ${RepeatWipes}"
+echo "The single partition wipe - round: ${count}"
 
 #openssl enc -aes-256-ctr -pass pass:"$(dd if=/dev/random bs=128 count=1 2>/dev/null | base64)" -nosalt </dev/zero \
 #| pv -bartpes ${PartInByteSize} |
 #dd bs=${UseLogicBlockSize} count=${PartSectors} of=/dev/${DeviceName##*/} \ 
 #seek=$((PartStart + PartAlignmentOffset)) oflag=direct iflag=nocache 
 
-#dd if=/dev/urandom bs=${UseLogicBlockSize} count=${PartSectors} |
+	for DoWipe in "${WipeOrder[@]}";do
+	 case "$DoWipe" in
+	dd-random | ddr | dd )
+echo 'Using "dd" with source /dev/urandom'
+
+#dd if=/dev/urandom bs=${UseLogicBlockSize} count=${PartSectors} > /dev/${DeviceName##*/}
+
+	;;
+	dd-zero | ddz )
+echo 'Using "dd" with source /dev/zero'
+
+#dd if=/dev/zero bs=${UseLogicBlockSize} count=${PartSectors} > /dev/${DeviceName##*/}
+	;;
+	cp-random | cpr | cp)
+echo 'Using "cp" with source /dev/urandom'
+
+	set +e
+#cp /dev/urandom "/dev/${DeviceName##*/}"
+	set -e
+	;;
+	cp-zero | cpz )
+echo 'Using "cp" with source /dev/zero'
+	set +e
+#cp /dev/zero "/dev/${DeviceName##*/}"
+	set -e
+	;;
+	pv-random | pvr | pv )
+echo 'Using "pv" with source /dev/urandom'
+	# Check if "pv" is available
+	set -e; which pv;
+	set +e
+#pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/urandom > /dev/"${DeviceName##*/}"
+	set -e
+	;;
+	pv-zero | pvz )
+echo 'Using "pv" with source /dev/zero'
+	# Check if "pv" is available
+	set -e; which pv;
+	set +e
+#pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/zero > /dev/"${DeviceName##*/}"
+	set -e
+	;;
+	cat-random | catr | cat )
+echo 'Using "cat" with source /dev/urandom'
+
+	set +e
+#cat /dev/urandom "/dev/${DeviceName##*/}"
+	set -e
+	;;
+	cat-zero | catz )
+echo 'Using "cat" with source /dev/zero'
+	set +e
+#cat /dev/zero "/dev/${DeviceName##*/}"
+	set -e
+	;;
+
 #pv -bartpes ${PartInByteSize} |
 #dd of=/dev/${DeviceName##*/} bs=${UseLogicBlockSize} \
 #seek=$((PartStart + PartAlignmentOffset)) oflag=direct iflag=nocache
@@ -197,7 +255,8 @@ echo "The single partition wipe - round: ${RepeatWipes}"
 #pv -bartpes ${PartInByteSize} | 
 #dd of=/dev/${DeviceName##*/} bs=${UseLogicBlockSize} \ 
 #seek=${PartStart} oflag=direct iflag=nocache
-
+	 esac
+	done
 done
 
 echo Finished at:
@@ -253,9 +312,75 @@ echo Starting at:
 date
 
 for (( count=0; count<=RepeatWipes; count++ ));do
-echo "The whole devce wipe - round: ${RepeatWipes}"
+echo "The whole devce wipe - round: ${count}"
 #wipefs -a ${PathToDevice}
+	for DoWipe in "${WipeOrder[@]}";do
+	 case "$DoWipe" in
+	dd-random | ddr | dd )
+echo 'Using "dd" with source /dev/urandom'
 
+#dd if=/dev/urandom bs=${UseLogicBlockSize} count=${PartSectors} > /dev/${DeviceName##*/}
+#dd if=/dev/urandom bs=${UsePhysBlockSize}  count=${PartSectors} > /dev/${DeviceName##*/}
+	;;
+	dd-zero | ddz )
+echo 'Using "dd" with source /dev/zero'
+
+#dd if=/dev/zero bs=${UseLogicBlockSize} count=${PartSectors} > /dev/${DeviceName##*/}
+#dd if=/dev/zero bs=${UsePhysBlockSize}  count=${PartSectors} > /dev/${DeviceName##*/}
+	;;
+	cp-random | cpr | cp )
+echo 'Using "cp" with source /dev/urandom'
+
+	set +e
+#cp /dev/urandom "/dev/${DeviceName##*/}"
+	set -e
+	;;
+	cp-zero | cpz)
+echo 'Using "cp" with source /dev/zero'
+	set +e
+#cp /dev/zero "/dev/${DeviceName##*/}"
+	set -e
+	;;
+	pv-random | pvr | pv )
+echo 'Using "pv" with source /dev/urandom'
+	# Check if "pv" is available
+	set -e; which pv;
+	set +e
+#pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/urandom > /dev/"${DeviceName##*/}"
+	set -e
+	;;
+	pv-zero | pvz )
+echo 'Using "pv" with source /dev/zero'
+	# Check if "pv" is available
+	set -e; which pv;
+	set +e
+#pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/zero > /dev/"${DeviceName##*/}"
+	set -e
+	;;
+	cat-random | catr | cat )
+echo 'Using "cat" with source /dev/urandom'
+
+	set +e
+#cat /dev/urandom "/dev/${DeviceName##*/}"
+	set -e
+	;;
+	cat-zero | catz )
+echo 'Using "cat" with source /dev/zero'
+	set +e
+#cat /dev/zero "/dev/${DeviceName##*/}"
+	set -e
+	;;
+
+#pv -bartpes ${PartInByteSize} |
+#dd of=/dev/${DeviceName##*/} bs=${UseLogicBlockSize} \
+#seek=$((PartStart + PartAlignmentOffset)) oflag=direct iflag=nocache
+
+#dd if=/dev/zero bs=${UseLogicBlockSize} count=${PartSectors} |
+#pv -bartpes ${PartInByteSize} | 
+#dd of=/dev/${DeviceName##*/} bs=${UseLogicBlockSize} \ 
+#seek=${PartStart} oflag=direct iflag=nocache
+	 esac
+	done
 #
 # Use Logical Block Size
 #

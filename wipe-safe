@@ -216,30 +216,30 @@ echo "The single partition wipe - round: ${count}"
 #dd bs=${UseLogicBlockSize} count=${PartSectors} of=/dev/${DeviceName##*/} \ 
 #seek=$((PartStart + PartAlignmentOffset)) oflag=direct iflag=nocache 
 
-	for DoWipe in "${WipeOrder[@]}";do
+	for DoWipe in "${WipeOrder[@]}";do	
 	 case "$DoWipe" in
 	dd-random | ddr | dd ) # tools
 echo 'Using "dd" with source /dev/urandom'
 
-[[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${UseLogicBlockSize}" count="${PartSectors}" > /dev/"${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${UseLogicBlockSize}" count="${PartSectors}" > "${PathToDevice}"
 
 	;;
 	dd-zero | ddz ) # methods wipe partition
 echo 'Using "dd" with source /dev/zero'
 
-[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${UseLogicBlockSize}" count="${PartSectors}" > /dev/"${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${UseLogicBlockSize}" count="${PartSectors}" > "${PathToDevice}"
 	;;
 	cp-random | cpr | cp) # methods wipe partition
 echo 'Using "cp" with source /dev/urandom'
 
 	set +e
-[[ "$NO_DRY" == "YES" ]] && cp /dev/urandom "/dev/${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && cp /dev/urandom "${PathToDevice}"
 	set -e
 	;;
 	cp-zero | cpz ) # methods wipe partition
 echo 'Using "cp" with source /dev/zero'
 	set +e
-[[ "$NO_DRY" == "YES" ]] && cp /dev/zero "/dev/${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && cp /dev/zero "${PathToDevice}"
 	set -e
 	;;
 	pv-random | pvr | pv ) # methods wipe partition
@@ -247,7 +247,7 @@ echo 'Using "pv" with source /dev/urandom'
 	# Check if "pv" is available
 	set -e; which pv;
 	set +e
-[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/urandom > /dev/"${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/urandom > "${PathToDevice}"
 	set -e
 	;;
 	pv-zero | pvz ) # methods wipe partition
@@ -255,20 +255,20 @@ echo 'Using "pv" with source /dev/zero'
 	# Check if "pv" is available
 	set -e; which pv;
 	set +e
-[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/zero > /dev/"${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/zero > "${PathToDevice}"
 	set -e
 	;;
 	cat-random | catr | cat ) # methods wipe partition
 echo 'Using "cat" with source /dev/urandom'
 
 	set +e
-[[ "$NO_DRY" == "YES" ]] && cat /dev/urandom "/dev/${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && cat /dev/urandom > "${PathToDevice}"
 	set -e
 	;;
 	cat-zero | catz ) # methods wipe partition
 echo 'Using "cat" with source /dev/zero'
 	set +e
-[[ "$NO_DRY" == "YES" ]] && cat /dev/zero "/dev/${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && cat /dev/zero > "${PathToDevice}"
 	set -e
 	;;
 

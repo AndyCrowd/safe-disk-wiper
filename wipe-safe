@@ -21,7 +21,10 @@ wipe-safe [options] "/dev/path_to_device"
 	0/disable	- will not check if any of the partitions is mounted
 	1/low       - will stop only if destination partition is mounted
 	2/max       - will stop if at least one partition is mounted
-		Default = max'	
+		Default = max
+--sm , --show-me    - searching content in this script, 
+	helpful to list available patterns and find places where you can add own
+	Example --sm patterns '	
 exit 0
 	}
 
@@ -59,25 +62,32 @@ if [[ "${cmd_Options[GetNext]}" =~ $NumberWipe ]];
 	then
 RepeatWipes="${cmd_Options[GetNext]}"
 #echo 'AAAAAAAiAA:::::::::::: ' "${cmd_Options[GetNext]}";
-
+else 
+echo 'The "'"${cmd_Options[GetNext]}"'" is not a valid number!'
+exit 1
 fi
 	;;
 -o | --order )
 WipeOrder=(${cmd_Options[GetNext]//,/ })
+	;;
+--sm | --show-me )
+[[  ! -z "${cmd_Options[GetNext]}"  ]] && grep -n "${cmd_Options[GetNext]}"  "$0"
+echo 'The show is done'
+exit 0
 	;;
 -c | --confirm)
 # NumberConfirm='^[0-1]+$';
 if [[ "${cmd_Options[GetNext]}" =~ "1" || ${cmd_Options[GetNext],,} == "yes" || ${cmd_Options[GetNext],,} == "y" ]];
 	then
 ASK_confirm="1"
-echo 'YES YES:::::::::::: ' "${cmd_Options[GetNext]}";
+echo 'YES to ASK' "${cmd_Options[GetNext]}";
 
 	else
 
 		if [[ "${cmd_Options[GetNext]}" == "0" || ${cmd_Options[GetNext],,} == "no" || ${cmd_Options[GetNext],,} == "n" ]];
 			then
 ASK_confirm="0"
-echo 'NO NO:::::::::::: ' "${cmd_Options[GetNext]}";
+echo 'NO to ASK ' "${cmd_Options[GetNext]}";
 		else
 		echo 'Wrong parameter to "confirm"
 correct are: 1 / yes , 0 / no'
@@ -86,12 +96,14 @@ exit
 fi
 	;;
 -a | --add-wipe-loop)
-	# NumberWipe='^[0-9]+$';
+	NumberWipe='^[0-9]+$';
 if [[ "${cmd_Options[GetNext]}" =~ $NumberWipe ]];
 	then
 
-echo 'AAAAAAAiAA:::::::::::: ' "${cmd_Options[GetNext]}";
-
+echo 'Additional loops:' "${cmd_Options[GetNext]}";
+else
+echo 'The "'"${cmd_Options[GetNext]}"'" is not a valid number!'
+exit 1
 fi
 	;;
 -s | --safety)
@@ -196,31 +208,31 @@ echo "The single partition wipe - round: ${count}"
 
 	for DoWipe in "${WipeOrder[@]}";do
 	 case "$DoWipe" in
-	dd-random | ddr | dd )
+	dd-random | ddr | dd ) # tools
 echo 'Using "dd" with source /dev/urandom'
 
 #dd if=/dev/urandom bs=${UseLogicBlockSize} count=${PartSectors} > /dev/${DeviceName##*/}
 
 	;;
-	dd-zero | ddz )
+	dd-zero | ddz ) # tools
 echo 'Using "dd" with source /dev/zero'
 
 #dd if=/dev/zero bs=${UseLogicBlockSize} count=${PartSectors} > /dev/${DeviceName##*/}
 	;;
-	cp-random | cpr | cp)
+	cp-random | cpr | cp) # tools
 echo 'Using "cp" with source /dev/urandom'
 
 	set +e
 #cp /dev/urandom "/dev/${DeviceName##*/}"
 	set -e
 	;;
-	cp-zero | cpz )
+	cp-zero | cpz ) # tools
 echo 'Using "cp" with source /dev/zero'
 	set +e
 #cp /dev/zero "/dev/${DeviceName##*/}"
 	set -e
 	;;
-	pv-random | pvr | pv )
+	pv-random | pvr | pv ) # tools
 echo 'Using "pv" with source /dev/urandom'
 	# Check if "pv" is available
 	set -e; which pv;
@@ -228,7 +240,7 @@ echo 'Using "pv" with source /dev/urandom'
 #pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/urandom > /dev/"${DeviceName##*/}"
 	set -e
 	;;
-	pv-zero | pvz )
+	pv-zero | pvz ) # tools
 echo 'Using "pv" with source /dev/zero'
 	# Check if "pv" is available
 	set -e; which pv;
@@ -236,14 +248,14 @@ echo 'Using "pv" with source /dev/zero'
 #pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/zero > /dev/"${DeviceName##*/}"
 	set -e
 	;;
-	cat-random | catr | cat )
+	cat-random | catr | cat ) # tools
 echo 'Using "cat" with source /dev/urandom'
 
 	set +e
 #cat /dev/urandom "/dev/${DeviceName##*/}"
 	set -e
 	;;
-	cat-zero | catz )
+	cat-zero | catz ) # tools
 echo 'Using "cat" with source /dev/zero'
 	set +e
 #cat /dev/zero "/dev/${DeviceName##*/}"
@@ -319,32 +331,32 @@ echo "The whole devce wipe - round: ${count}"
 #wipefs -a ${PathToDevice}
 	for DoWipe in "${WipeOrder[@]}";do
 	 case "$DoWipe" in
-	dd-random | ddr | dd )
+	dd-random | ddr | dd ) # tools
 echo 'Using "dd" with source /dev/urandom'
 
 #dd if=/dev/urandom bs=${UseLogicBlockSize} count=${PartSectors} > /dev/${DeviceName##*/}
 #dd if=/dev/urandom bs=${UsePhysBlockSize}  count=${PartSectors} > /dev/${DeviceName##*/}
 	;;
-	dd-zero | ddz )
+	dd-zero | ddz ) # tools
 echo 'Using "dd" with source /dev/zero'
 
 #dd if=/dev/zero bs=${UseLogicBlockSize} count=${PartSectors} > /dev/${DeviceName##*/}
 #dd if=/dev/zero bs=${UsePhysBlockSize}  count=${PartSectors} > /dev/${DeviceName##*/}
 	;;
-	cp-random | cpr | cp )
+	cp-random | cpr | cp ) # tools
 echo 'Using "cp" with source /dev/urandom'
 
 	set +e
 #cp /dev/urandom "/dev/${DeviceName##*/}"
 	set -e
 	;;
-	cp-zero | cpz)
+	cp-zero | cpz) # tools
 echo 'Using "cp" with source /dev/zero'
 	set +e
 #cp /dev/zero "/dev/${DeviceName##*/}"
 	set -e
 	;;
-	pv-random | pvr | pv )
+	pv-random | pvr | pv ) # tools
 echo 'Using "pv" with source /dev/urandom'
 	# Check if "pv" is available
 	set -e; which pv;
@@ -352,7 +364,7 @@ echo 'Using "pv" with source /dev/urandom'
 #pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/urandom > /dev/"${DeviceName##*/}"
 	set -e
 	;;
-	pv-zero | pvz )
+	pv-zero | pvz ) # tools
 echo 'Using "pv" with source /dev/zero'
 	# Check if "pv" is available
 	set -e; which pv;
@@ -360,14 +372,14 @@ echo 'Using "pv" with source /dev/zero'
 #pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/zero > /dev/"${DeviceName##*/}"
 	set -e
 	;;
-	cat-random | catr | cat )
+	cat-random | catr | cat ) # tools
 echo 'Using "cat" with source /dev/urandom'
 
 	set +e
 #cat /dev/urandom "/dev/${DeviceName##*/}"
 	set -e
 	;;
-	cat-zero | catz )
+	cat-zero | catz ) # tools
 echo 'Using "cat" with source /dev/zero'
 	set +e
 #cat /dev/zero "/dev/${DeviceName##*/}"

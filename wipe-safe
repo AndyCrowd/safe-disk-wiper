@@ -24,7 +24,13 @@ wipe-safe [options] "/dev/path_to_device"
 		Default = max
 --sm , --show-me    - searching content in this script, 
 	helpful to list available patterns and find places where you can add own
-	Example --sm patterns '	
+	Example:
+	  To show line numbers with the word "methods" that is 
+	  located beside options that can be used with "--order".
+	  It is a place where you can add own patterns.
+	  --show-me methods
+	  --show-me NO_DRY
+--nd , --no-dry-run	- By default it only shows what can be done'	
 exit 0
 	}
 
@@ -41,6 +47,7 @@ PathToDevice="${cmd_Options[cmd_last_option]}"
 RepeatWipes="0"
 ASK_confirm="1"
 be_safe='max'
+NO_DRY="NO"
 
 #echo 'You must edit the script:
 # 1) Uncomment or add own wiping patterns.
@@ -55,6 +62,9 @@ for cmd_check in "$@";do
 	case "$cmd_check" in
 -h | --help )
 	help_options
+	;;
+--nd | --no-dry-run )
+NO_DRY="YES"
 	;;
 -a | --add-wipe-loop )
 	NumberWipe='^[0-9]+$';
@@ -211,54 +221,54 @@ echo "The single partition wipe - round: ${count}"
 	dd-random | ddr | dd ) # tools
 echo 'Using "dd" with source /dev/urandom'
 
-#dd if=/dev/urandom bs=${UseLogicBlockSize} count=${PartSectors} > /dev/${DeviceName##*/}
+[[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${UseLogicBlockSize}" count="${PartSectors}" > /dev/"${DeviceName##*/}"
 
 	;;
-	dd-zero | ddz ) # tools
+	dd-zero | ddz ) # methods wipe partition
 echo 'Using "dd" with source /dev/zero'
 
-#dd if=/dev/zero bs=${UseLogicBlockSize} count=${PartSectors} > /dev/${DeviceName##*/}
+[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${UseLogicBlockSize}" count="${PartSectors}" > /dev/"${DeviceName##*/}"
 	;;
-	cp-random | cpr | cp) # tools
+	cp-random | cpr | cp) # methods wipe partition
 echo 'Using "cp" with source /dev/urandom'
 
 	set +e
-#cp /dev/urandom "/dev/${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && cp /dev/urandom "/dev/${DeviceName##*/}"
 	set -e
 	;;
-	cp-zero | cpz ) # tools
+	cp-zero | cpz ) # methods wipe partition
 echo 'Using "cp" with source /dev/zero'
 	set +e
-#cp /dev/zero "/dev/${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && cp /dev/zero "/dev/${DeviceName##*/}"
 	set -e
 	;;
-	pv-random | pvr | pv ) # tools
+	pv-random | pvr | pv ) # methods wipe partition
 echo 'Using "pv" with source /dev/urandom'
 	# Check if "pv" is available
 	set -e; which pv;
 	set +e
-#pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/urandom > /dev/"${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/urandom > /dev/"${DeviceName##*/}"
 	set -e
 	;;
-	pv-zero | pvz ) # tools
+	pv-zero | pvz ) # methods wipe partition
 echo 'Using "pv" with source /dev/zero'
 	# Check if "pv" is available
 	set -e; which pv;
 	set +e
-#pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/zero > /dev/"${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/zero > /dev/"${DeviceName##*/}"
 	set -e
 	;;
-	cat-random | catr | cat ) # tools
+	cat-random | catr | cat ) # methods wipe partition
 echo 'Using "cat" with source /dev/urandom'
 
 	set +e
-#cat /dev/urandom "/dev/${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && cat /dev/urandom "/dev/${DeviceName##*/}"
 	set -e
 	;;
-	cat-zero | catz ) # tools
+	cat-zero | catz ) # methods wipe partition
 echo 'Using "cat" with source /dev/zero'
 	set +e
-#cat /dev/zero "/dev/${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && cat /dev/zero "/dev/${DeviceName##*/}"
 	set -e
 	;;
 
@@ -331,58 +341,58 @@ echo "The whole devce wipe - round: ${count}"
 #wipefs -a ${PathToDevice}
 	for DoWipe in "${WipeOrder[@]}";do
 	 case "$DoWipe" in
-	dd-random | ddr | dd ) # tools
+	dd-random | ddr | dd ) # methods wipe device
 echo 'Using "dd" with source /dev/urandom'
 
 #dd if=/dev/urandom bs=${UseLogicBlockSize} count=${PartSectors} > /dev/${DeviceName##*/}
-#dd if=/dev/urandom bs=${UsePhysBlockSize}  count=${PartSectors} > /dev/${DeviceName##*/}
+[[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${UsePhysBlockSize}"  count="${PartSectors}" > /dev/"${DeviceName##*/}"
 	;;
-	dd-zero | ddz ) # tools
+	dd-zero | ddz ) # methods wipe device
 echo 'Using "dd" with source /dev/zero'
 
 #dd if=/dev/zero bs=${UseLogicBlockSize} count=${PartSectors} > /dev/${DeviceName##*/}
-#dd if=/dev/zero bs=${UsePhysBlockSize}  count=${PartSectors} > /dev/${DeviceName##*/}
+[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${UsePhysBlockSize}"  count="${PartSectors}" > /dev/"${DeviceName##*/}"
 	;;
-	cp-random | cpr | cp ) # tools
+	cp-random | cpr | cp ) # methods wipe device
 echo 'Using "cp" with source /dev/urandom'
 
 	set +e
-#cp /dev/urandom "/dev/${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && cp /dev/urandom "/dev/${DeviceName##*/}"
 	set -e
 	;;
-	cp-zero | cpz) # tools
+	cp-zero | cpz) # methods wipe device
 echo 'Using "cp" with source /dev/zero'
 	set +e
-#cp /dev/zero "/dev/${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && cp /dev/zero "/dev/${DeviceName##*/}"
 	set -e
 	;;
-	pv-random | pvr | pv ) # tools
+	pv-random | pvr | pv ) # methods wipe device
 echo 'Using "pv" with source /dev/urandom'
 	# Check if "pv" is available
 	set -e; which pv;
 	set +e
-#pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/urandom > /dev/"${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/urandom > /dev/"${DeviceName##*/}"
 	set -e
 	;;
-	pv-zero | pvz ) # tools
+	pv-zero | pvz ) # methods wipe device
 echo 'Using "pv" with source /dev/zero'
 	# Check if "pv" is available
 	set -e; which pv;
 	set +e
-#pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/zero > /dev/"${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${PartInByteSize} /dev/zero > /dev/"${DeviceName##*/}"
 	set -e
 	;;
-	cat-random | catr | cat ) # tools
+	cat-random | catr | cat ) # methods wipe device
 echo 'Using "cat" with source /dev/urandom'
 
 	set +e
-#cat /dev/urandom "/dev/${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && cat /dev/urandom "/dev/${DeviceName##*/}"
 	set -e
 	;;
-	cat-zero | catz ) # tools
+	cat-zero | catz ) # methods wipe device
 echo 'Using "cat" with source /dev/zero'
 	set +e
-#cat /dev/zero "/dev/${DeviceName##*/}"
+[[ "$NO_DRY" == "YES" ]] && cat /dev/zero "/dev/${DeviceName##*/}"
 	set -e
 	;;
 

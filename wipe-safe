@@ -148,18 +148,21 @@ CC='[0-9]+$';
 
 Use_Physical_Block_Size=$(cat /sys/block/"${Main_Device_Name##*/}"/queue/physical_block_size)
 Use_Logical_Block_Size=$(cat /sys/block/"${Main_Device_Name##*/}"/queue/logical_block_size)
-if [[ "${Path_To_Partition}" =~ $CC ]];then
+	if [[ "${Path_To_Partition}" =~ $CC ]];then
 #PartAlignmentOffset=$(cat /sys/block/${Main_Device_Name##*/}/${Path_To_Partition##*/}/alignment_offset)
 #PartAlignmentOffset=0
-Partition_Start=$(cat /sys/block/"${Main_Device_Name##*/}/${Path_To_Partition##*/}"/start)
-PartSectors=$(cat /sys/block/"${Main_Device_Name##*/}/${Path_To_Partition##*/}"/size)
-Partition_Size_In_Bytes=$((Use_Logical_Block_Size * PartSectors))
 
+		Partition_Start=$(cat /sys/block/"${Main_Device_Name##*/}/${Path_To_Partition##*/}"/start)
+		PartSectors=$(cat /sys/block/"${Main_Device_Name##*/}/${Path_To_Partition##*/}"/size)
+		Partition_Size_In_Bytes=$((Use_Logical_Block_Size * PartSectors))
+
+#############################
 echo "The ${Path_To_Partition} Is partition of the: ${Main_Device_Name} 
 Use_Logical_Block_Size = ${Use_Logical_Block_Size}
 Partition_Start = ${Partition_Start} 
 PartSectors = ${PartSectors}  
 Partition_Size_In_Bytes = ${Partition_Size_In_Bytes}"
+#############################
 
 ISMounted="$(lsblk /dev/${Path_To_Partition##*/} -o "NAME,MOUNTPOINT" | grep /)"
 if [[ ! -z "$ISMounted"  ]];then
@@ -193,13 +196,16 @@ echo Canceled !!!
 fi
 fi
 
-if [ ${ASK_confirm} == "0"  ];then
+	if [ ${ASK_confirm} == "0"  ];then
+
 echo Starting at:
 date
 
 for (( count=0; count<=RepeatWipes; count++ ));do
+
 echo "The single partition wipe - round: ${count}"
-	for DoWipe in "${WipeOrder[@]}";do	
+
+	for DoWipe in "${WipeOrder[@]}";do
 	 case "$DoWipe" in
 	dd-random | ddr | dd ) # tools
 echo 'Using "dd" with source /dev/urandom'
@@ -230,7 +236,7 @@ echo 'Using "pv" with source /dev/urandom'
 	# Check if "pv" is available
 	set -e; which pv;
 	set +e
-[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${Partition_Size_In_Bytes} /dev/urandom > /dev/"${Path_To_Partition##*/}"
+[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size "${Partition_Size_In_Bytes}" /dev/urandom > /dev/"${Path_To_Partition##*/}"
 	set -e
 	;;
 	pv-zero | pvz ) # methods wipe partition
@@ -238,7 +244,7 @@ echo 'Using "pv" with source /dev/zero'
 	# Check if "pv" is available
 	set -e; which pv;
 	set +e
-[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size ${Partition_Size_In_Bytes} /dev/zero > /dev/"${Path_To_Partition##*/}"
+[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size "${Partition_Size_In_Bytes}" /dev/zero > /dev/"${Path_To_Partition##*/}"
 	set -e
 	;;
 	cat-random | catr | cat ) # methods wipe partition
@@ -268,7 +274,7 @@ done
 echo Finished at:
 date
 
-fi
+	fi
 
 else 
 
@@ -276,16 +282,18 @@ partprobe "${Path_To_Partition}"
 
 Device_Logical_Sectors=$(cat /sys/block/"${Main_Device_Name##*/}"/size)
 Device_Size_In_Byte=$((Use_Logical_Block_Size * Device_Logical_Sectors))
-Device_Physical_Sectors=$((Device_Size_In_Byte / Use_Physical_Block_Size))
+Use_Device_Physical_Sectors=$((Device_Size_In_Byte / Use_Physical_Block_Size))
 
+#############################
 echo "The ${Path_To_Partition} is a device'!'
 Use_Logical_Block_Size = ${Use_Logical_Block_Size}
 Device_Logical_Sectors = ${Device_Logical_Sectors}
 Device_Size_In_Byte = ${Device_Size_In_Byte}
 
 Use_Physical_Block_Size = ${Use_Physical_Block_Size}
-Device_Physical_Sectors = ${Device_Physical_Sectors}
+Use_Device_Physical_Sectors = ${Use_Device_Physical_Sectors}
 Device_Size_In_Byte = ${Device_Size_In_Byte}"
+#############################
 
 ISMounted="$(lsblk /dev/${Path_To_Partition##*/}  -o "NAME,MOUNTPOINT" | grep /)"
 if [[ ! -z "$ISMounted"  ]];
@@ -326,13 +334,13 @@ echo "The whole devce wipe - round: ${count}"
 echo 'Using "dd" with source /dev/urandom'
 
 #dd if=/dev/urandom bs=${Use_Logical_Block_Size} count=${PartSectors} > /dev/${Main_Device_Name##*/}
-[[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${Use_Physical_Block_Size}"  count="${Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
+[[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${Use_Physical_Block_Size}"  count="${Use_Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
 	;;
 	dd-zero | ddz ) # methods wipe device
 echo 'Using "dd" with source /dev/zero'
 
 #dd if=/dev/zero bs=${Use_Logical_Block_Size} count=${PartSectors} > /dev/${Main_Device_Name##*/}
-[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${Use_Physical_Block_Size}"  count="${Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
+[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${Use_Physical_Block_Size}"  count="${Use_Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
 	;;
 	cp-random | cpr | cp ) # methods wipe device
 echo 'Using "cp" with source /dev/urandom'
@@ -373,7 +381,7 @@ echo 'Using "cat" with source /dev/urandom'
 	cat-zero | catz ) # methods wipe device
 echo 'Using "cat" with source /dev/zero'
 	set +e
-[[ "$NO_DRY" == "YES" ]] && cat /dev/zero > "/dev/${Main_Device_Name##*/}"
+[[ "$NO_DRY" == "YES" ]] && cat /dev/zero > /dev/"${Main_Device_Name##*/}"
 	set -e
 	;;
 	xz ) # methods wipe device
@@ -415,7 +423,7 @@ fi;
 #dd if=/dev/urandom bs=${Use_Physical_Block_Size} \
 #| gzip | bzip2 | xz -9 --format=raw | pv -bartpes ${Device_Size_In_Byte} \ 
 #| dd of=/dev/${Main_Device_Name##*/} seek=0 oflag=direct iflag=nocache bs=${Use_Physical_Block_Size} \
-#count=${Device_Physical_Sectors}
+#count=${Use_Device_Physical_Sectors}
 #
 # Use Physical Block Size & compressed AES-ssl data.
 # High CPU usage but might be good to use on SSD. 
@@ -423,10 +431,10 @@ fi;
 #openssl enc -aes-256-ctr -pass pass:"$(dd if=/dev/random bs=128 \
 #count=1 2>/dev/null | base64)" -nosalt </dev/zero | xz -9 --format=raw | pv -bartpes ${Device_Size_In_Byte} \ 
 #| dd of=/dev/${Main_Device_Name##*/} seek=0 oflag=direct iflag=nocache bs=${Use_Physical_Block_Size} \ 
-#count=${Device_Physical_Sectors}
+#count=${Use_Device_Physical_Sectors}
 #
 # Use Physical Block Size & zeros
 #
 #dd if=/dev/zero bs=${Use_Physical_Block_Size} | pv -bartpes ${Device_Size_In_Byte} |
 #dd of=/dev/${Main_Device_Name##*/} seek=0 oflag=direct iflag=nocache bs=${Use_Physical_Block_Size} \ 
-#count=${Device_Physical_Sectors}
+#count=${Use_Device_Physical_Sectors}

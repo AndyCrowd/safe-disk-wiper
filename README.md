@@ -1,7 +1,7 @@
-### safe-disk-wiper
-Using additional security checks to avoid wiping of mounted partitions.
+## safe-device-wiper
+### Using additional security checks to avoid wiping of the mounted partitions.
 
-# It is dangerous to wipe a device directly from your working system because if you occasionally will do typo of the destination device it will destroy it!
+#### It is dangerous to wipe a device directly from your working system because if you occasionally will do typo of the destination device it will destroy it!
 
 # The script contains no activated patterns but you can add own or uncommend existing by editing the script.
 

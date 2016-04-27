@@ -1,4 +1,4 @@
-# safe-disk-wiper
+### safe-disk-wiper
 Using additional security checks to avoid wiping of mounted partitions.
 
 # It is dangerous to wipe a device directly from your working system because if you occasionally will do typo of the destination device it will destroy it!

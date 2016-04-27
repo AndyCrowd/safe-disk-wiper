@@ -3,8 +3,6 @@
 
 ###### It is dangerous to wipe a device directly from your working system because if you occasionally will do typo of the destination device it will destroy it!
 
-# The script contains no activated patterns but you can add own or uncommend existing by editing the script.
-
 ###### The script will help you by doing checks before starting to wipe them.
 
 ## WARNING !!!!!! 

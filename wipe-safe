@@ -11,13 +11,16 @@ help_options(){
 echo 'Options:
 wipe-safe [options] "/dev/path_to_device"
 
+The device path must be used as the last option!
+
 -a , --add-wipe-loop [number]	- set amount of additional loops for order
 		Defaut = 0
 -o , --order [order of methods] - set order of wiping commands
 	Example: -o dd,ddz,cp,cpz
---sm , --show-me [grep pattern]   - searching content in this script, supporting grep syntax.
+--sm , --show-me [grep pattern]   - searching content in this script, 
+    supporting grep syntax and should be used as the first option.
 	Helpful to list available patterns that can be used with command "--order"
-	and find places where you can add own tools
+	and find places where you can add own tools.
 	Example:	
 	  --show-me -e methods -e NO_DRY -e OPTIONS
 	  
@@ -36,15 +39,15 @@ exit 0
 	}
 
 if [[ -z "$1" ]];then
-help_options
-else
-case "$1" in
+		help_options
+	else
+	case "$1" in
 --sm | --show-me )
 [[  ! -z "${@:2}"  ]] && grep -n "${@:2}" "$0"
-echo 'The show is done: '"${*:2}"
-exit 0
+		echo 'The show is done: '"${*:2}"
+	exit 0
 	;;
-esac
+	esac
 fi
 
 cmd_Options=("$@")
@@ -151,6 +154,12 @@ Use_Logical_Block_Size=$(cat /sys/block/"${Main_Device_Name##*/}"/queue/logical_
 	if [[ "${Path_To_Partition}" =~ $CC ]];then
 #PartAlignmentOffset=$(cat /sys/block/${Main_Device_Name##*/}/${Path_To_Partition##*/}/alignment_offset)
 #PartAlignmentOffset=0
+
+#############################
+#                           #
+# methods for the PARTITION #
+#                           #
+#############################
 
 		Partition_Start=$(cat /sys/block/"${Main_Device_Name##*/}/${Path_To_Partition##*/}"/start)
 		Partition_Sectors=$(cat /sys/block/"${Main_Device_Name##*/}/${Path_To_Partition##*/}"/size)
@@ -279,12 +288,15 @@ date
 else 
 
 partprobe "${Path_To_Partition}"
-
-Use_Device_Logical_Sectors=$(cat /sys/block/"${Main_Device_Name##*/}"/size)
-Use_Device_Size_In_Bytes=$((Use_Logical_Block_Size * Use_Device_Logical_Sectors))
-Use_Device_Physical_Sectors=$((Use_Device_Size_In_Bytes / Use_Physical_Block_Size))
-
 #############################
+#                           #
+# methods for the DEVICE    #
+#                           #
+#############################
+		Use_Device_Logical_Sectors=$(cat /sys/block/"${Main_Device_Name##*/}"/size)
+		Use_Device_Size_In_Bytes=$((Use_Logical_Block_Size * Use_Device_Logical_Sectors))
+		Use_Device_Physical_Sectors=$((Use_Device_Size_In_Bytes / Use_Physical_Block_Size))
+
 echo "The ${Path_To_Partition} is a device'!'
 Use_Logical_Block_Size = ${Use_Logical_Block_Size}
 Use_Device_Logical_Sectors = ${Use_Device_Logical_Sectors}

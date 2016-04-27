@@ -35,6 +35,10 @@ The device path must be used as the last option!
 
 WARNING !!!!!! 
 PLEASE KEEP SAFETY SYNTAX WHEN ADDING OWN WIPING TOOLS'
+
+	echo 'No block device is specified! Use something like /dev/sdX(Y)'
+	lsblk -o SIZE,NAME,FSTYPE,MODEL
+	echo use one from above to destroy
 exit 0
 	}
 
@@ -80,7 +84,7 @@ exit 1
 fi
 	;;
 -o | --order ) # OPTIONS
-WipeOrder=(${cmd_Options[GetNext]//,/ })
+Wipe_Order_Methods=(${cmd_Options[GetNext]//,/ })
 	;;
 -c | --confirm) # OPTIONS
 if [[ "${cmd_Options[GetNext]}" =~ "1" || ${cmd_Options[GetNext],,} == "yes" || ${cmd_Options[GetNext],,} == "y" ]];
@@ -105,11 +109,10 @@ fi
 	NumberWipe='^[0-9]+$';
 if [[ "${cmd_Options[GetNext]}" =~ $NumberWipe ]];
 	then
-
-echo 'Additional loops:' "${cmd_Options[GetNext]}";
-else
-echo 'The "'"${cmd_Options[GetNext]}"'" is not a valid number!'
-exit 1
+		echo 'Additional loops:' "${cmd_Options[GetNext]}";
+	else
+		echo 'The "'"${cmd_Options[GetNext]}"'" is not a valid number!'
+	exit 1
 fi
 	;;
 -s | --safety) # OPTIONS
@@ -195,14 +198,14 @@ no )
 esac
 fi
 
-if [ "$ASK_confirm" == "1"  ];then
-read -r -p "Continue to run patterns to Destroy PARTITION /dev/${Path_To_Partition##*/}? [y/N] " answer
-answer=${answer,,}
-if [[ $answer =~ ^(yes|y)$ ]];then
-ASK_confirm="0"
-else
-echo Canceled !!!
-fi
+if [ "$ASK_confirm" == "1"  ];	then
+		read -r -p "Continue to run patterns to Destroy PARTITION /dev/${Path_To_Partition##*/}? [y/N] " answer
+		answer=${answer,,}
+	if [[ $answer =~ ^(yes|y)$ ]];	then
+			ASK_confirm="0"
+		else
+			echo 'Canceled !!!'
+	fi
 fi
 
 	if [ ${ASK_confirm} == "0"  ];then
@@ -214,34 +217,34 @@ for (( count=0; count<=RepeatWipes; count++ ));do
 
 echo "The single partition wipe - round: ${count}"
 
-	for DoWipe in "${WipeOrder[@]}";do
-	 case "$DoWipe" in
+	for Wipe_Method in "${Wipe_Order_Methods[@]}";do
+	 case "$Wipe_Method" in
 	dd-random | ddr | dd ) # tools
-echo 'Using "dd" with source /dev/urandom'
+echo 'Using "dd" with the source /dev/urandom'
 
 [[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${Use_Logical_Block_Size}" count="${Partition_Sectors}" oflag=direct iflag=nocache -of="/dev/${Path_To_Partition##*/}"
 
 	;;
 	dd-zero | ddz ) # methods wipe partition
-echo 'Using "dd" with source /dev/zero'
+echo 'Using "dd" with the source /dev/zero'
 
 [[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${Use_Logical_Block_Size}" count="${Partition_Sectors}" oflag=direct iflag=nocache of="/dev/${Path_To_Partition##*/}"
 	;;
 	cp-random | cpr | cp) # methods wipe partition
-echo 'Using "cp" with source /dev/urandom'
+echo 'Using "cp" with the source /dev/urandom'
 
 	set +e
 [[ "$NO_DRY" == "YES" ]] && cp /dev/urandom /dev/"${Path_To_Partition##*/}"
 	set -e
 	;;
 	cp-zero | cpz ) # methods wipe partition
-echo 'Using "cp" with source /dev/zero'
+echo 'Using "cp" with the source /dev/zero'
 	set +e
 [[ "$NO_DRY" == "YES" ]] && cp /dev/zero /dev/"${Path_To_Partition##*/}"
 	set -e
 	;;
 	pv-random | pvr | pv ) # methods wipe partition
-echo 'Using "pv" with source /dev/urandom'
+echo 'Using "pv" with the source /dev/urandom'
 	# Check if "pv" is available
 	set -e; which pv;
 	set +e
@@ -249,7 +252,7 @@ echo 'Using "pv" with source /dev/urandom'
 	set -e
 	;;
 	pv-zero | pvz ) # methods wipe partition
-echo 'Using "pv" with source /dev/zero'
+echo 'Using "pv" with the source /dev/zero'
 	# Check if "pv" is available
 	set -e; which pv;
 	set +e
@@ -257,19 +260,19 @@ echo 'Using "pv" with source /dev/zero'
 	set -e
 	;;
 	cat-random | catr | cat ) # methods wipe partition
-echo 'Using "cat" with source /dev/urandom'
+echo 'Using "cat" with the source /dev/urandom'
 	set +e
 [[ "$NO_DRY" == "YES" ]] && cat /dev/urandom > /dev/"${Path_To_Partition##*/}"
 	set -e
 	;;
 	cat-zero | catz ) # methods wipe partition
-echo 'Using "cat" with source /dev/zero'
+echo 'Using "cat" with the source /dev/zero'
 	set +e
 [[ "$NO_DRY" == "YES" ]] && cat /dev/zero > /dev/"${Path_To_Partition##*/}"
 	set -e
 	;;
 	xz ) # methods wipe device
-echo 'Using "xz" with source /dev/urandom'
+echo 'Using "xz" with the source /dev/urandom'
 	# Check if "xz" is available
 	set -e; which xz;
 	set +e
@@ -323,52 +326,51 @@ no )
 	esac
 fi
 
-if [ "$ASK_confirm" == "1"  ];then
-read -r -p "Continue to run patterns to WIPE DEVICE /dev/${Main_Device_Name##*/}? [y/N] " answer
-answer=${answer,,}
-if [[ $answer =~ ^(yes|y)$ ]];then
-ASK_confirm="0"
-else
-echo Canceled !!!
-fi
+if [ "$ASK_confirm" == "1"  ];	then
+		read -r -p "Continue to run patterns to WIPE DEVICE /dev/${Main_Device_Name##*/}? [y/N] " answer
+		answer=${answer,,}
+	if [[ $answer =~ ^(yes|y)$ ]];then
+		ASK_confirm="0"
+	else
+		echo Canceled !!!
+	fi
 fi
 
-if [ ${ASK_confirm} == "0"  ];then
-echo Starting at:
-date
-
+if [ "${ASK_confirm}" == "0"  ];then
+	echo Starting at:
+	date
 for (( count=0; count<=RepeatWipes; count++ ));do
 echo "The whole devce wipe - round: ${count}"
 #wipefs -a ${Path_To_Partition}
-	for DoWipe in "${WipeOrder[@]}";do
-	 case "$DoWipe" in
+	for Wipe_Method in "${Wipe_Order_Methods[@]}";do
+	 case "$Wipe_Method" in
 	dd-random | ddr | dd ) # methods wipe device
-echo 'Using "dd" with source /dev/urandom'
+echo 'Using "dd" with the source /dev/urandom'
 
 #dd if=/dev/urandom bs=${Use_Logical_Block_Size} count=${Partition_Sectors} > /dev/${Main_Device_Name##*/}
 [[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${Use_Physical_Block_Size}"  count="${Use_Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
 	;;
 	dd-zero | ddz ) # methods wipe device
-echo 'Using "dd" with source /dev/zero'
+echo 'Using "dd" with the source /dev/zero'
 
 #dd if=/dev/zero bs=${Use_Logical_Block_Size} count=${Partition_Sectors} > /dev/${Main_Device_Name##*/}
 [[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${Use_Physical_Block_Size}"  count="${Use_Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
 	;;
 	cp-random | cpr | cp ) # methods wipe device
-echo 'Using "cp" with source /dev/urandom'
+echo 'Using "cp" with the source /dev/urandom'
 
 	set +e
 [[ "$NO_DRY" == "YES" ]] && cp /dev/urandom "/dev/${Main_Device_Name##*/}"
 	set -e
 	;;
 	cp-zero | cpz) # methods wipe device
-echo 'Using "cp" with source /dev/zero'
+echo 'Using "cp" with the source /dev/zero'
 	set +e
 [[ "$NO_DRY" == "YES" ]] && cp /dev/zero "/dev/${Main_Device_Name##*/}"
 	set -e
 	;;
 	pv-random | pvr | pv ) # methods wipe device
-echo 'Using "pv" with source /dev/urandom'
+echo 'Using "pv" with the source /dev/urandom'
 	# Check if "pv" is available
 	set -e; which pv;
 	set +e
@@ -376,7 +378,7 @@ echo 'Using "pv" with source /dev/urandom'
 	set -e
 	;;
 	pv-zero | pvz ) # methods wipe device
-echo 'Using "pv" with source /dev/zero'
+echo 'Using "pv" with the source /dev/zero'
 	# Check if "pv" is available
 	set -e; which pv;
 	set +e
@@ -384,20 +386,20 @@ echo 'Using "pv" with source /dev/zero'
 	set -e
 	;;
 	cat-random | catr | cat ) # methods wipe device
-echo 'Using "cat" with source /dev/urandom'
+echo 'Using "cat" with the source /dev/urandom'
 
 	set +e
 [[ "$NO_DRY" == "YES" ]] && cat /dev/urandom > /dev/"${Main_Device_Name##*/}"
 	set -e
 	;;
 	cat-zero | catz ) # methods wipe device
-echo 'Using "cat" with source /dev/zero'
+echo 'Using "cat" with the source /dev/zero'
 	set +e
 [[ "$NO_DRY" == "YES" ]] && cat /dev/zero > /dev/"${Main_Device_Name##*/}"
 	set -e
 	;;
 	xz ) # methods wipe device
-echo 'Using "xz" with source /dev/urandom'
+echo 'Using "xz" with the source /dev/urandom'
 	# Check if "xz" is available
 	set -e; which xz;
 	set +e
@@ -406,21 +408,20 @@ echo 'Using "xz" with source /dev/urandom'
 	;;
 	 esac
 	done
-
 done
 echo Finished at:
 date
 
-fi;
+	fi;
 fi;
 
 #To verify after filled in disk with zeros
 #hexdump "${Path_To_Partition}"
 else echo 'Is not a block/storage device!'
 fi;
-else echo 'No block device is specified! Use something like /dev/sdX(Y)'
-lsblk -o SIZE,NAME,FSTYPE,MODEL
-echo chose one from above to destroy
+#else echo 'No block device is specified! Use something like /dev/sdX(Y)'
+#lsblk -o SIZE,NAME,FSTYPE,MODEL
+#echo chose one from above to destroy
 fi;
 ######################
 #

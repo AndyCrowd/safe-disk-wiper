@@ -1,13 +1,17 @@
 ## safe-device-wiper
 ### Using additional security checks to avoid wiping of the mounted partitions.
 
-#### It is dangerous to wipe a device directly from your working system because if you occasionally will do typo of the destination device it will destroy it!
+###### It is dangerous to wipe a device directly from your working system because if you occasionally will do typo of the destination device it will destroy it!
 
 # The script contains no activated patterns but you can add own or uncommend existing by editing the script.
 
-# The script will help you by doing checks before starting to wipe them.
+###### The script will help you by doing checks before starting to wipe them.
 
-# wipe-safe [options] "/dev/path_to_device"
+## WARNING !!!!!! 
+## PLEASE KEEP SAFETY SYNTAX WHEN ADDING OWN WIPING TOOLS'
+
+```
+wipe-safe [options] "/dev/path_to_device"
 
 The device path must be used as the last option!
 
@@ -30,8 +34,4 @@ The device path must be used as the last option!
 	2/max       - will stop if at least one partition is mounted
 		Default = max
 --nd , --no-dry-run	- By default it only shows what can be done
-
-WARNING !!!!!! 
-PLEASE KEEP SAFETY SYNTAX WHEN ADDING OWN WIPING TOOLS'
-
-
+```

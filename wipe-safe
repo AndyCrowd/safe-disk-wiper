@@ -124,11 +124,6 @@ correct are:
 	;;
 	esac
 done
-#keywait
-
-# Use on:
-# Partition = Logical sectors only
-# Disk = Physical sectors or Logical sectors
 
 Main_Device_Name="${Path_To_Partition/[0-9$]/}"
 
@@ -160,7 +155,7 @@ Partition_Size_In_Bytes = ${Partition_Size_In_Bytes}"
 
 ISMounted="$(lsblk /dev/"${Path_To_Partition##*/}" -o "NAME,MOUNTPOINT" | grep -e / -e '\]' )"
 ISMounted="$(lsblk /dev/"${Main_Device_Name##*/}" -o "NAME,MOUNTPOINT" | grep -e / -e '\]' )"
-#if [[ ! -z "$ISMounted"  ]];then
+
 case "$be_safe" in
 low ) ISMounted="$(lsblk /dev/"${Path_To_Partition##*/}" -o "NAME,MOUNTPOINT" | grep -e / -e '\]' )" ;
 	if [[ ! -z "$ISMounted"  ]];then
@@ -182,7 +177,6 @@ no )
 	echo 'WARNING safety is disabled'
 	;;
 esac
-#fi
 
 if [ "$ASK_confirm" == "1"  ];	then
 		read -r -p "Continue to run patterns to Destroy PARTITION /dev/${Path_To_Partition##*/}? [y/N] " answer
@@ -205,7 +199,7 @@ echo "The single partition wipe - round: ${count}"
 
 	for Wipe_Method in "${Wipe_Order_Methods[@]}";do
 	 case "$Wipe_Method" in
-	dd-random | ddr | dd ) # tools
+	dd-random | ddr | dd ) # methods wipe partition
 echo 'Using "dd" with the source /dev/urandom'
 
 [[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${Use_Logical_Block_Size}" count="${Partition_Sectors}" oflag=direct iflag=nocache -of="/dev/${Path_To_Partition##*/}"
@@ -273,7 +267,6 @@ echo Finished at:
 date
 
 	fi
-
 else 
 
 [[  "$UID" == "0" ]] && partprobe "${Path_To_Partition}" ; # OPTIONS
@@ -287,6 +280,7 @@ else
 		Use_Device_Size_In_Bytes=$((Use_Logical_Block_Size * Use_Device_Logical_Sectors))
 		Use_Device_Physical_Sectors=$((Use_Device_Size_In_Bytes / Use_Physical_Block_Size))
 
+#############################
 echo "The ${Path_To_Partition} is a device'!'
 Use_Logical_Block_Size = ${Use_Logical_Block_Size}
 Use_Device_Logical_Sectors = ${Use_Device_Logical_Sectors}
@@ -298,30 +292,30 @@ Use_Device_Size_In_Bytes = ${Use_Device_Size_In_Bytes}"
 #############################
 
 ISMounted="$(lsblk /dev/"${Main_Device_Name##*/}"  -o "NAME,MOUNTPOINT" | grep -e / -e '\]' )"
-if [[ ! -z "$ISMounted"  ]];
-	then
-	case "$be_safe" in
-max | low ) 
-	echo '!!! Not allowed to wipe! At least one partition is mounted:'
-	echo "$ISMounted"
-	echo 'Unmount and try again!'
-	exit 1
-	;;
-no )
-	echo 'Warning safety is disabled'
-	;;
+	if [[ ! -z "$ISMounted"  ]];
+		then
+		case "$be_safe" in
+	max | low ) 
+		echo '!!! Not allowed to wipe! At least one partition is mounted:'
+		echo "$ISMounted"
+		echo 'Unmount and try again!'
+		exit 1
+		;;
+	no )
+		echo 'Warning safety is disabled'
+		;;
 	esac
 fi
 
-if [ "$ASK_confirm" == "1"  ];	then
-		read -r -p "Continue to run patterns to WIPE DEVICE /dev/${Main_Device_Name##*/}? [y/N] " answer
-		answer=${answer,,}
-	if [[ $answer =~ ^(yes|y)$ ]];then
-		ASK_confirm="0"
-	else
-		echo Canceled !!!
+	if [ "$ASK_confirm" == "1"  ];	then
+			read -r -p "Continue to run patterns to WIPE DEVICE /dev/${Main_Device_Name##*/}? [y/N] " answer
+			answer=${answer,,}
+		if [[ $answer =~ ^(yes|y)$ ]];then
+			ASK_confirm="0"
+		else
+			echo Canceled !!!
+		fi
 	fi
-fi
 
 if [ "${ASK_confirm}" == "0"  ];then
 	echo Starting at:
@@ -401,40 +395,6 @@ date
 
 	fi;
 fi;
-
-#To verify after filled in disk with zeros
-#hexdump "${Path_To_Partition}"
-else echo 'Is not a block/storage device!'
+		else echo 'Is not a block/storage device!'
+	fi;
 fi;
-#else echo 'No block device is specified! Use something like /dev/sdX(Y)'
-#lsblk -o SIZE,NAME,FSTYPE,MODEL
-#echo chose one from above to destroy
-fi;
-######################
-#
-# Use Logical Block Size
-#
-#dd if=/dev/zero bs=${Use_Logical_Block_Size} count=${Use_Device_Logical_Sectors} | pv -bartpes ${Use_Device_Size_In_Bytes} | 
-#dd of=/dev/${Main_Device_Name##*/} seek=0 oflag=direct iflag=nocache bs=${Use_Logical_Block_Size}
-#
-# Use Physical Block Size & compressed randomized data.
-# High CPU usage but might be good to use on SSD. 
-#
-#dd if=/dev/urandom bs=${Use_Physical_Block_Size} \
-#| gzip | bzip2 | xz -9 --format=raw | pv -bartpes ${Use_Device_Size_In_Bytes} \ 
-#| dd of=/dev/${Main_Device_Name##*/} seek=0 oflag=direct iflag=nocache bs=${Use_Physical_Block_Size} \
-#count=${Use_Device_Physical_Sectors}
-#
-# Use Physical Block Size & compressed AES-ssl data.
-# High CPU usage but might be good to use on SSD. 
-#
-#openssl enc -aes-256-ctr -pass pass:"$(dd if=/dev/random bs=128 \
-#count=1 2>/dev/null | base64)" -nosalt </dev/zero | xz -9 --format=raw | pv -bartpes ${Use_Device_Size_In_Bytes} \ 
-#| dd of=/dev/${Main_Device_Name##*/} seek=0 oflag=direct iflag=nocache bs=${Use_Physical_Block_Size} \ 
-#count=${Use_Device_Physical_Sectors}
-#
-# Use Physical Block Size & zeros
-#
-#dd if=/dev/zero bs=${Use_Physical_Block_Size} | pv -bartpes ${Use_Device_Size_In_Bytes} |
-#dd of=/dev/${Main_Device_Name##*/} seek=0 oflag=direct iflag=nocache bs=${Use_Physical_Block_Size} \ 
-#count=${Use_Device_Physical_Sectors}

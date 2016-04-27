@@ -7,7 +7,7 @@
 ###### Only to preview what can be done don't use one of the following options: ``--no-dry-run`` or ``--nd``
 ###### First use option ``--order`` to chose which of the tools you want to use. To see currently available use as the first option:
 ```wipe-safe --show-me -e NO_DRY -e methods```
-###### Then preview how it will look like when starting wiping. This example will start wiping first with ``dd`` and ``/dev/urandom source``, after that will start dd with source ``/dev/zero``. The order of tools must be separated with: ```,```
+###### Then preview how it will look like when starting wiping. This example will start wiping first with ``dd`` and ``/dev/urandom`` as a source, after that will start ``dd`` with the source ``/dev/zero``. The order of tools must be separated with: ```,```
 ```wipe-safe --order ddr,ddz /dev/sdX(Y)```
 ###### To use same order of tools more than once you can use option ``--add-wipe-loop`` or ``-a``. This example will preview wiping with additional 33 rounds the combination of `urandom/zero/urandom`:
 ```wipe-safe --order ddr,ddz,ddr --add-wipe-loop 33 /dev/sdX(Y)```

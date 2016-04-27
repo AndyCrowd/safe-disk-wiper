@@ -35,15 +35,15 @@ The device path must be used as the last option!
 
 WARNING !!!!!! 
 PLEASE KEEP SAFETY SYNTAX WHEN ADDING OWN WIPING TOOLS'
-
-	echo '
-!!! No block device is specified! Use something like /dev/sdX(Y)'
-	lsblk -o SIZE,NAME,FSTYPE,MODEL
 exit 0
 	}
 
 if [[ -z "$1" ]];then
-		help_options
+#		help_options
+	echo '
+!!! No block device is specified! Use something like /dev/sdX(Y)
+!!! And use option --help to see more options to activate wiping'
+	lsblk -o SIZE,NAME,FSTYPE,MODEL
 	else
 	case "$1" in
 --sm | --show-me )

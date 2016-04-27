@@ -36,9 +36,9 @@ The device path must be used as the last option!
 WARNING !!!!!! 
 PLEASE KEEP SAFETY SYNTAX WHEN ADDING OWN WIPING TOOLS'
 
-	echo 'No block device is specified! Use something like /dev/sdX(Y)'
+	echo '
+!!! No block device is specified! Use something like /dev/sdX(Y)'
 	lsblk -o SIZE,NAME,FSTYPE,MODEL
-	echo use one from above to destroy
 exit 0
 	}
 

@@ -1,15 +1,16 @@
 ## safe-device-wiper
 ### Using additional security checks to avoid wiping of the mounted partitions.
 
-###### It is dangerous to wipe a device directly from your working system because if you occasionally will do a typo of the destination device that will damage the system!
+###### It is dangerous to wipe a device directly from your working system because it is easy to do a typo of the destination device that will damage the system!
 
 ###### The script will help you by doing checks before starting to wipe them.
+###### Only to preview what can be done don't use one of the following options: "--no-dry-run" or "--nd"
 
 ## You are allowed to add own patterns or tools inside the script.
 #### To get an overview of code parts where you can add own or show available use:
 #### wipe-safe --show-me -e methods -e NO_DRY -e OPTIONS
-### WARNING !!!!!! 
-### PLEASE KEEP SAFETY SYNTAX WHEN ADDING OWN WIPING TOOLS'
+>### WARNING !!!!!! 
+### PLEASE KEEP SAFETY SYNTAX WHEN ADDING OWN WIPING TOOLS
 
 ```
 wipe-safe [options] "/dev/path_to_device"

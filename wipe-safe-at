@@ -26,7 +26,7 @@ The device path must be used as the last option!
 	  
 -c , --confirm [yes/1 , no/0]	- disable confirmation before continue
 		Default = yes
--s , --safety [0/disable , 1/low , 2/max]	- set safety level
+-s , --safety , --safe [0/disable , 1/low , 2/max]	- set safety level
 	0/disable	- will not check if any of the partitions is mounted
 	1/low       - will stop only if the destination partition is mounted
 	2/max       - will stop if at least one partition is mounted
@@ -106,7 +106,7 @@ correct are: 1 / yes , 0 / no'
 		exit 1
 	fi
 	;;
--s | --safety) # OPTIONS
+-s | --safety | --safe) # OPTIONS
 		case "${cmd_Options[GetNext],,}" in
 			0 | disable | d | no | n ) 	be_safe="no" ; # OPTIONS
 			;;
@@ -122,18 +122,19 @@ correct are:
 				exit 1
 		esac
 	;;
+	* )	
 	esac
 done
 
 Main_Device_Name="${Path_To_Partition/[0-9$]/}"
 
 if [ ! -z "${Path_To_Partition}"  ];then
-if [ -b "${Main_Device_Name}" ] ;then
+if [ -b "/dev/${Main_Device_Name##*/}" ] ;then
 CC='[0-9]+$';
 
 Use_Physical_Block_Size=$(cat /sys/block/"${Main_Device_Name##*/}"/queue/physical_block_size)
 Use_Logical_Block_Size=$(cat /sys/block/"${Main_Device_Name##*/}"/queue/logical_block_size)
-	if [[ "${Path_To_Partition}" =~ $CC ]];then
+	if [[ "/dev/${Path_To_Partition##*/}" =~ $CC ]];then
 
 #############################
 #                           #
@@ -146,18 +147,18 @@ Use_Logical_Block_Size=$(cat /sys/block/"${Main_Device_Name##*/}"/queue/logical_
 		Partition_Size_In_Bytes=$((Use_Logical_Block_Size * Partition_Sectors))
 
 #############################
-echo "The ${Path_To_Partition} Is partition of the: ${Main_Device_Name} 
+echo "The /dev/${Path_To_Partition##*/} Is partition of the: /dev/${Main_Device_Name##*/} 
 Use_Logical_Block_Size = ${Use_Logical_Block_Size}
 Partition_Start = ${Partition_Start} 
 Partition_Sectors = ${Partition_Sectors}  
 Partition_Size_In_Bytes = ${Partition_Size_In_Bytes}"
 #############################
 
-ISMounted="$(lsblk /dev/"${Path_To_Partition##*/}" -o "NAME,MOUNTPOINT" | grep -e / -e '\]' )"
+ISMounted="$(lsblk "/dev/${Path_To_Partition##*/}" -o "NAME,MOUNTPOINT" | grep -e / -e '\]' )"
 ISMounted="$(lsblk /dev/"${Main_Device_Name##*/}" -o "NAME,MOUNTPOINT" | grep -e / -e '\]' )"
 
 case "$be_safe" in
-low ) ISMounted="$(lsblk /dev/"${Path_To_Partition##*/}" -o "NAME,MOUNTPOINT" | grep -e / -e '\]' )" ;
+low ) ISMounted="$(lsblk "/dev/${Path_To_Partition##*/}" -o "NAME,MOUNTPOINT" | grep -e / -e '\]' )" ;
 	if [[ ! -z "$ISMounted"  ]];then
 		echo '!!! Not allowed to wipe! Partition is mounted:'
 		echo "$ISMounted"
@@ -199,56 +200,56 @@ echo "The single partition wipe - round: ${count}"
 
 	for Wipe_Method in "${Wipe_Order_Methods[@]}";do
 	 case "$Wipe_Method" in
-	dd-random | ddr | dd ) # methods wipe partition
+	dd-random | ddr | dd ) # methods: wipe partition
 echo 'Using "dd" with the source /dev/urandom'
 
 [[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${Use_Logical_Block_Size}" count="${Partition_Sectors}" oflag=direct iflag=nocache -of="/dev/${Path_To_Partition##*/}"
 
 	;;
-	dd-zero | ddz ) # methods wipe partition
+	dd-zero | ddz ) # methods: wipe partition
 echo 'Using "dd" with the source /dev/zero'
 
 [[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${Use_Logical_Block_Size}" count="${Partition_Sectors}" oflag=direct iflag=nocache of="/dev/${Path_To_Partition##*/}"
 	;;
-	cp-random | cpr | cp) # methods wipe partition
+	cp-random | cpr | cp) # methods: wipe partition
 echo 'Using "cp" with the source /dev/urandom'
 
 	set +e
-[[ "$NO_DRY" == "YES" ]] && cp /dev/urandom /dev/"${Path_To_Partition##*/}"
+[[ "$NO_DRY" == "YES" ]] && cp /dev/urandom "/dev/${Path_To_Partition##*/}"
 	set -e
 	;;
-	cp-zero | cpz ) # methods wipe partition
+	cp-zero | cpz ) # methods: wipe partition
 echo 'Using "cp" with the source /dev/zero'
 	set +e
-[[ "$NO_DRY" == "YES" ]] && cp /dev/zero /dev/"${Path_To_Partition##*/}"
+[[ "$NO_DRY" == "YES" ]] && cp /dev/zero "/dev/${Path_To_Partition##*/}"
 	set -e
 	;;
-	pv-random | pvr | pv ) # methods wipe partition
+	pv-random | pvr | pv ) # methods: wipe partition
 echo 'Using "pv" with the source /dev/urandom'
 	# Check if "pv" is available
 	set -e; which pv;
 	set +e
-[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size "${Partition_Size_In_Bytes}" /dev/urandom > /dev/"${Path_To_Partition##*/}"
+[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size "${Partition_Size_In_Bytes}" /dev/urandom > "/dev/${Path_To_Partition##*/}"
 	set -e
 	;;
-	pv-zero | pvz ) # methods wipe partition
+	pv-zero | pvz ) # methods: wipe partition
 echo 'Using "pv" with the source /dev/zero'
 	# Check if "pv" is available
 	set -e; which pv;
 	set +e
-[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size "${Partition_Size_In_Bytes}" /dev/zero > /dev/"${Path_To_Partition##*/}"
+[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size "${Partition_Size_In_Bytes}" /dev/zero > "/dev/${Path_To_Partition##*/}"
 	set -e
 	;;
-	cat-random | catr | cat ) # methods wipe partition
+	cat-random | catr | cat ) # methods: wipe partition
 echo 'Using "cat" with the source /dev/urandom'
 	set +e
-[[ "$NO_DRY" == "YES" ]] && cat /dev/urandom > /dev/"${Path_To_Partition##*/}"
+[[ "$NO_DRY" == "YES" ]] && cat /dev/urandom > "/dev/${Path_To_Partition##*/}"
 	set -e
 	;;
-	cat-zero | catz ) # methods wipe partition
+	cat-zero | catz ) # methods: wipe partition
 echo 'Using "cat" with the source /dev/zero'
 	set +e
-[[ "$NO_DRY" == "YES" ]] && cat /dev/zero > /dev/"${Path_To_Partition##*/}"
+[[ "$NO_DRY" == "YES" ]] && cat /dev/zero > "/dev/${Path_To_Partition##*/}"
 	set -e
 	;;
 	xz ) # methods wipe device
@@ -256,7 +257,7 @@ echo 'Using "xz" with the source /dev/urandom'
 	# Check if "xz" is available
 	set -e; which xz;
 	set +e
-[[ "$NO_DRY" == "YES" ]] && xz --compress -9 --format=raw < /dev/urandom > /dev/"${Path_To_Partition##*/}"
+[[ "$NO_DRY" == "YES" ]] && xz --compress -9 --format=raw < /dev/urandom > "/dev/${Path_To_Partition##*/}"
 	set -e
 	;;
 	 esac

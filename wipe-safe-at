@@ -1,0 +1,400 @@
+#/bin/bash
+#
+#Script: License: GPL
+#
+#Author: Andy Crowd
+#
+#TESTED ONLY IN ARCH LINUX
+#
+
+help_options(){
+echo 'Options:
+wipe-safe-at [options] "/dev/path_to_device"
+
+The device path must be used as the last option!
+
+-a , --add-wipe-loop [number]	- set amount of additional loops for order
+		Defaut = 0
+-o , --order [order of methods] - set order of wiping commands
+	Example: -o dd,ddz,cp,cpz
+--sm , --show-me [grep pattern]   - searching content in this script, 
+    supporting grep syntax and should be used as the first option.
+	Helpful to list available patterns that can be used with command "--order"
+	and find places where you can add own tools.
+	Example:	
+	  --show-me -e methods -e NO_DRY -e OPTIONS
+	  
+-c , --confirm [yes/1 , no/0]	- disable confirmation before continue
+		Default = yes
+-s , --safety [0/disable , 1/low , 2/max]	- set safety level
+	0/disable	- will not check if any of the partitions is mounted
+	1/low       - will stop only if the destination partition is mounted
+	2/max       - will stop if at least one partition is mounted
+		Default = max
+--nd , --no-dry-run	- By default it only shows what can be done
+
+WARNING !!!!!! 
+PLEASE KEEP SAFETY SYNTAX WHEN ADDING OWN WIPING TOOLS'
+exit 0
+	}
+
+if [[ -z "$1" ]];then
+#		help_options
+	echo '
+!!! No block device is specified! Use something like /dev/sdX(Y)
+!!! And use option --help to see more options to activate wiping'
+	lsblk -o SIZE,NAME,FSTYPE,MODEL
+	else
+	case "$1" in
+--sm | --show-me )
+[[  ! -z "${@:2}"  ]] && grep -n "${@:2}" "$0"
+		echo 'The show is done: '"${*:2}"
+	exit 0
+	;;
+	esac
+fi
+
+cmd_Options=("$@")
+cmd_last_option="((${#cmd_Options[@]}-1))"
+
+Path_To_Partition="${cmd_Options[cmd_last_option]}"
+
+RepeatWipes="0"
+ASK_confirm="1"
+be_safe='max'
+NO_DRY="NO"
+
+for cmd_check in "$@";do
+((GetNext++));
+	case "$cmd_check" in
+-h | --help ) # OPTIONS
+	help_options
+	;;
+--nd | --no-dry-run ) # OPTIONS
+NO_DRY="YES"
+	;;
+-a | --add-wipe-loop ) # OPTIONS
+	NumberWipe='^[0-9]+$';
+if [[ "${cmd_Options[GetNext]}" =~ $NumberWipe ]];
+	then
+RepeatWipes="${cmd_Options[GetNext]}"
+else 
+echo 'The "'"${cmd_Options[GetNext]}"'" is not a valid number!'
+exit 1
+fi
+	;;
+-o | --order ) Wipe_Order_Methods=(${cmd_Options[GetNext]//,/ }) ; # OPTIONS
+	;;
+-c | --confirm) # OPTIONS
+		case "${cmd_Options[GetNext],,}" in
+			1 | yes | y ) ASK_confirm="1" ; # OPTIONS
+			;;
+			0 | no | n ) ASK_confirm="0" ; # OPTIONS
+			;;
+			* ) echo 'Wrong parameter to "confirm"
+correct are: 1 / yes , 0 / no'
+			exit 1
+			;;
+		esac
+	;;
+-a | --add-wipe-loop) NumberWipe='^[0-9]+$' ; # OPTIONS	
+	if [[ "${cmd_Options[GetNext]}" =~ $NumberWipe ]];
+		then
+			echo 'Additional loops:' "${cmd_Options[GetNext]}";
+		else
+			echo 'The "'"${cmd_Options[GetNext]}"'" is not a valid number!'
+		exit 1
+	fi
+	;;
+-s | --safety) # OPTIONS
+		case "${cmd_Options[GetNext],,}" in
+			0 | disable | d | no | n ) 	be_safe="no" ; # OPTIONS
+			;;
+			1 | low | l ) be_safe="low" ; # OPTIONS
+			;;
+			2 | high | h | max | m ) be_safe="max"; # OPTIONS
+			;;
+			* ) echo 'Wrong parameter to "safety"
+correct are: 
+0 / disabled / d / no / n
+1 / low / l
+2 / max / m / high / h'
+				exit 1
+		esac
+	;;
+	esac
+done
+
+Main_Device_Name="${Path_To_Partition/[0-9$]/}"
+
+if [ ! -z "${Path_To_Partition}"  ];then
+if [ -b "${Main_Device_Name}" ] ;then
+CC='[0-9]+$';
+
+Use_Physical_Block_Size=$(cat /sys/block/"${Main_Device_Name##*/}"/queue/physical_block_size)
+Use_Logical_Block_Size=$(cat /sys/block/"${Main_Device_Name##*/}"/queue/logical_block_size)
+	if [[ "${Path_To_Partition}" =~ $CC ]];then
+
+#############################
+#                           #
+# methods for the PARTITION #
+#                           #
+#############################
+
+		Partition_Start=$(cat /sys/block/"${Main_Device_Name##*/}/${Path_To_Partition##*/}"/start)
+		Partition_Sectors=$(cat /sys/block/"${Main_Device_Name##*/}/${Path_To_Partition##*/}"/size)
+		Partition_Size_In_Bytes=$((Use_Logical_Block_Size * Partition_Sectors))
+
+#############################
+echo "The ${Path_To_Partition} Is partition of the: ${Main_Device_Name} 
+Use_Logical_Block_Size = ${Use_Logical_Block_Size}
+Partition_Start = ${Partition_Start} 
+Partition_Sectors = ${Partition_Sectors}  
+Partition_Size_In_Bytes = ${Partition_Size_In_Bytes}"
+#############################
+
+ISMounted="$(lsblk /dev/"${Path_To_Partition##*/}" -o "NAME,MOUNTPOINT" | grep -e / -e '\]' )"
+ISMounted="$(lsblk /dev/"${Main_Device_Name##*/}" -o "NAME,MOUNTPOINT" | grep -e / -e '\]' )"
+
+case "$be_safe" in
+low ) ISMounted="$(lsblk /dev/"${Path_To_Partition##*/}" -o "NAME,MOUNTPOINT" | grep -e / -e '\]' )" ;
+	if [[ ! -z "$ISMounted"  ]];then
+		echo '!!! Not allowed to wipe! Partition is mounted:'
+		echo "$ISMounted"
+		echo 'Unmount and try again!'
+	exit 1
+	fi
+	;;
+max ) ISMounted="$(lsblk /dev/"${Main_Device_Name##*/}" -o "NAME,MOUNTPOINT" | grep -e / -e '\]' )" ;
+	if [[ ! -z "$ISMounted"  ]];then
+		echo '!!! Not allowed to wipe! At least one partition is mounted:'
+		echo "$ISMounted"
+		echo 'Unmount all and try again!'
+	exit 1
+	fi
+;;
+no )
+	echo 'WARNING safety is disabled'
+	;;
+esac
+
+if [ "$ASK_confirm" == "1"  ];	then
+		read -r -p "Continue to run patterns to Destroy PARTITION /dev/${Path_To_Partition##*/}? [y/N] " answer
+		answer=${answer,,}
+	if [[ $answer =~ ^(yes|y)$ ]];	then
+			ASK_confirm="0"
+		else
+			echo 'Canceled !!!'
+	fi
+fi
+
+	if [ ${ASK_confirm} == "0"  ];then
+
+echo Starting at:
+date
+
+for (( count=0; count<=RepeatWipes; count++ ));do
+
+echo "The single partition wipe - round: ${count}"
+
+	for Wipe_Method in "${Wipe_Order_Methods[@]}";do
+	 case "$Wipe_Method" in
+	dd-random | ddr | dd ) # methods wipe partition
+echo 'Using "dd" with the source /dev/urandom'
+
+[[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${Use_Logical_Block_Size}" count="${Partition_Sectors}" oflag=direct iflag=nocache -of="/dev/${Path_To_Partition##*/}"
+
+	;;
+	dd-zero | ddz ) # methods wipe partition
+echo 'Using "dd" with the source /dev/zero'
+
+[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${Use_Logical_Block_Size}" count="${Partition_Sectors}" oflag=direct iflag=nocache of="/dev/${Path_To_Partition##*/}"
+	;;
+	cp-random | cpr | cp) # methods wipe partition
+echo 'Using "cp" with the source /dev/urandom'
+
+	set +e
+[[ "$NO_DRY" == "YES" ]] && cp /dev/urandom /dev/"${Path_To_Partition##*/}"
+	set -e
+	;;
+	cp-zero | cpz ) # methods wipe partition
+echo 'Using "cp" with the source /dev/zero'
+	set +e
+[[ "$NO_DRY" == "YES" ]] && cp /dev/zero /dev/"${Path_To_Partition##*/}"
+	set -e
+	;;
+	pv-random | pvr | pv ) # methods wipe partition
+echo 'Using "pv" with the source /dev/urandom'
+	# Check if "pv" is available
+	set -e; which pv;
+	set +e
+[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size "${Partition_Size_In_Bytes}" /dev/urandom > /dev/"${Path_To_Partition##*/}"
+	set -e
+	;;
+	pv-zero | pvz ) # methods wipe partition
+echo 'Using "pv" with the source /dev/zero'
+	# Check if "pv" is available
+	set -e; which pv;
+	set +e
+[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size "${Partition_Size_In_Bytes}" /dev/zero > /dev/"${Path_To_Partition##*/}"
+	set -e
+	;;
+	cat-random | catr | cat ) # methods wipe partition
+echo 'Using "cat" with the source /dev/urandom'
+	set +e
+[[ "$NO_DRY" == "YES" ]] && cat /dev/urandom > /dev/"${Path_To_Partition##*/}"
+	set -e
+	;;
+	cat-zero | catz ) # methods wipe partition
+echo 'Using "cat" with the source /dev/zero'
+	set +e
+[[ "$NO_DRY" == "YES" ]] && cat /dev/zero > /dev/"${Path_To_Partition##*/}"
+	set -e
+	;;
+	xz ) # methods wipe device
+echo 'Using "xz" with the source /dev/urandom'
+	# Check if "xz" is available
+	set -e; which xz;
+	set +e
+[[ "$NO_DRY" == "YES" ]] && xz --compress -9 --format=raw < /dev/urandom > /dev/"${Path_To_Partition##*/}"
+	set -e
+	;;
+	 esac
+	done
+done
+
+echo Finished at:
+date
+
+	fi
+else 
+
+[[  "$UID" == "0" ]] && partprobe "${Path_To_Partition}" ; # OPTIONS
+
+#############################
+#                           #
+# methods for the DEVICE    #
+#                           #
+#############################
+		Use_Device_Logical_Sectors=$(cat /sys/block/"${Main_Device_Name##*/}"/size)
+		Use_Device_Size_In_Bytes=$((Use_Logical_Block_Size * Use_Device_Logical_Sectors))
+		Use_Device_Physical_Sectors=$((Use_Device_Size_In_Bytes / Use_Physical_Block_Size))
+
+#############################
+echo "The ${Path_To_Partition} is a device'!'
+Use_Logical_Block_Size = ${Use_Logical_Block_Size}
+Use_Device_Logical_Sectors = ${Use_Device_Logical_Sectors}
+Use_Device_Size_In_Bytes = ${Use_Device_Size_In_Bytes}
+
+Use_Physical_Block_Size = ${Use_Physical_Block_Size}
+Use_Device_Physical_Sectors = ${Use_Device_Physical_Sectors}
+Use_Device_Size_In_Bytes = ${Use_Device_Size_In_Bytes}"
+#############################
+
+ISMounted="$(lsblk /dev/"${Main_Device_Name##*/}"  -o "NAME,MOUNTPOINT" | grep -e / -e '\]' )"
+	if [[ ! -z "$ISMounted"  ]];
+		then
+		case "$be_safe" in
+	max | low ) 
+		echo '!!! Not allowed to wipe! At least one partition is mounted:'
+		echo "$ISMounted"
+		echo 'Unmount and try again!'
+		exit 1
+		;;
+	no )
+		echo 'Warning safety is disabled'
+		;;
+	esac
+fi
+
+	if [ "$ASK_confirm" == "1"  ];	then
+			read -r -p "Continue to run patterns to WIPE DEVICE /dev/${Main_Device_Name##*/}? [y/N] " answer
+			answer=${answer,,}
+		if [[ $answer =~ ^(yes|y)$ ]];then
+			ASK_confirm="0"
+		else
+			echo Canceled !!!
+		fi
+	fi
+
+if [ "${ASK_confirm}" == "0"  ];then
+	echo Starting at:
+	date
+for (( count=0; count<=RepeatWipes; count++ ));do
+echo "The whole devce wipe - round: ${count}"
+#wipefs -a ${Path_To_Partition}
+	for Wipe_Method in "${Wipe_Order_Methods[@]}";do
+	 case "$Wipe_Method" in
+	dd-random | ddr | dd ) # methods wipe device
+echo 'Using "dd" with the source /dev/urandom'
+
+#dd if=/dev/urandom bs=${Use_Logical_Block_Size} count=${Partition_Sectors} > /dev/${Main_Device_Name##*/}
+[[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${Use_Physical_Block_Size}"  count="${Use_Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
+	;;
+	dd-zero | ddz ) # methods wipe device
+echo 'Using "dd" with the source /dev/zero'
+
+#dd if=/dev/zero bs=${Use_Logical_Block_Size} count=${Partition_Sectors} > /dev/${Main_Device_Name##*/}
+[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${Use_Physical_Block_Size}"  count="${Use_Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
+	;;
+	cp-random | cpr | cp ) # methods wipe device
+echo 'Using "cp" with the source /dev/urandom'
+
+	set +e
+[[ "$NO_DRY" == "YES" ]] && cp /dev/urandom "/dev/${Main_Device_Name##*/}"
+	set -e
+	;;
+	cp-zero | cpz) # methods wipe device
+echo 'Using "cp" with the source /dev/zero'
+	set +e
+[[ "$NO_DRY" == "YES" ]] && cp /dev/zero "/dev/${Main_Device_Name##*/}"
+	set -e
+	;;
+	pv-random | pvr | pv ) # methods wipe device
+echo 'Using "pv" with the source /dev/urandom'
+	# Check if "pv" is available
+	set -e; which pv;
+	set +e
+[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size "${Use_Device_Size_In_Bytes}" /dev/urandom > /dev/"${Main_Device_Name##*/}"
+	set -e
+	;;
+	pv-zero | pvz ) # methods wipe device
+echo 'Using "pv" with the source /dev/zero'
+	# Check if "pv" is available
+	set -e; which pv;
+	set +e
+[[ "$NO_DRY" == "YES" ]] && pv --timer --eta --progress --bytes --average-rate --stop-at-size --size "${Use_Device_Size_In_Bytes}" /dev/zero > /dev/"${Main_Device_Name##*/}"
+	set -e
+	;;
+	cat-random | catr | cat ) # methods wipe device
+echo 'Using "cat" with the source /dev/urandom'
+
+	set +e
+[[ "$NO_DRY" == "YES" ]] && cat /dev/urandom > /dev/"${Main_Device_Name##*/}"
+	set -e
+	;;
+	cat-zero | catz ) # methods wipe device
+echo 'Using "cat" with the source /dev/zero'
+	set +e
+[[ "$NO_DRY" == "YES" ]] && cat /dev/zero > /dev/"${Main_Device_Name##*/}"
+	set -e
+	;;
+	xz ) # methods wipe device
+echo 'Using "xz" with the source /dev/urandom'
+	# Check if "xz" is available
+	set -e; which xz;
+	set +e
+[[ "$NO_DRY" == "YES" ]] && xz --compress -9 --format=raw < /dev/urandom > /dev/"${Main_Device_Name##*/}"
+	set -e
+	;;
+	 esac
+	done
+done
+echo Finished at:
+date
+
+	fi;
+fi;
+		else echo 'Is not a block/storage device!'
+	fi;
+fi;

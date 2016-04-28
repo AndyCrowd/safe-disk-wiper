@@ -1,0 +1,113 @@
+.TH WIPE-SAFE-AT 1 "APRIL 2016" WIPE-SAFE-AT 1
+.SH NAME
+wipe-safe-at	-	Wipe Safe - Avoid Typo
+.SH SYNOPSIS
+.br
+.B wipe-safe-at 
+.I [options] [path to device | device name]
+.br
+
+.SH DESCRIPTION
+.B wipe-safe-at 
+is a bash script with additional safety checks before starting wiping tools.
+.br
+By default all safety checks are set to maximum. 
+Without option "--nd" or "--no-dry-run" it will only show what can be done.
+.br
+You can use either only a device name or a full path to it. 
+.B wipe-safe-at
+sdX(Y)
+.B wipe-safe-at
+[options] /dev/sdX(Y)
+
+.SH OPTIONS
+.B --help
+- show help message
+.br
+.IP "\fB\-a , --add-wipe-loop \fR[number\fR]"
+- set amount of additional loops for option --order
+.br
+Defaut = 0
+.IP "\fB\-o , --order \fR[order of methods\fR]"
+- set order of wiping commands
+.br	
+Example: --order ddr,ddz,cpr,cpz
+.IP "\fB\--sm , --show-me \fR[grep pattern\fR]"
+- searching content in this script, 
+.br
+    supporting grep syntax and should be used only as the first option.
+.br	
+Helpful to list available patterns that can be used with command "--order"
+.br	
+and find places where you can add own tools.
+.br	
+Example:
+.br
+.B	wipe-safe-at \fR--show-me -e \fB methods\fR -e \fB NO_DRY\fR -e \fB OPTIONS
+	  
+-IP -c , --confirm [yes/1 , no/0]	- disable confirmation before continue
+Default = yes
+.IP "\fB\-s , --safety [0/disable , 1/low , 2/max]"
+- set safety level
+	0/disable	- will not check if any of the partitions is mounted
+	1/low       - will stop only if the destination partition is mounted
+	2/max       - will stop if at least one partition is mounted
+Default = max
+.IP "\fB\--nd , --no-dry-run"
+- By default it only shows what can be done
+.SH ADD OWN TOOLS
+.IP WARNING !!!!!! 
+.IP PLEASE KEEP SAFETY SYNTAX WHEN ADDING OWN WIPING TOOLS
+.br
+This should be infront of each wiping tool:
+.br
+.P [[ "$NO_DRY" == "YES" ]] &&
+and followed the bash syntax for 
+.br
+case ... esac
+.br
+        command1 | command2 )
+[[\fB\"$NO_DRY"\fR\==\fR\"YES"\fR\]]\fR\&&\fR\
+tool to use
+\fR\        ;;
+
+wipe-safe-at --show-me -e methods -e NO_DRY
+And you will get an output of where them are located in the script
+\fR.........
+\fR.........
+\fR LineNumber:	dd-random | ddr | dd ) # methods: wipe partition
+\fR LineNumber:[[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${Use_Logical_Block_Size}" count="${Partition_Sectors}" oflag=direct iflag=nocache -of="/dev/${Path_To_Partition##*/}"
+\fR LineNumber:	dd-zero | ddz ) # methods: wipe partition
+\fR LineNumber:[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${Use_Logical_Block_Size}" count="${Partition_Sectors}" oflag=direct iflag=nocache of="/dev/${Path_To_Partition##*/}"
+\fR .........
+\fR .........
+\fR LineNumber:	dd-random | ddr | dd ) # methods: wipe device
+\fR LineNumber:[[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${Use_Physical_Block_Size}"  count="${Use_Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
+\fR LineNumber:	dd-zero | ddz ) # methods: wipe device
+\fR LineNumber:[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${Use_Physical_Block_Size}"  count="${Use_Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
+\fR .........
+\fR .........
+
+.SH USAGE
+
+Only to preview what can be done don't use one of the following options: --no-dry-run or --nd in combination with option --order
+First use option --order to chose which of the tools you want to use. To see currently available use as the first option:
+
+wipe-safe --show-me -e NO_DRY -e methods
+Then preview how it will look like when starting wiping. This example will start wiping first with dd and /dev/urandom as a source, after that will start dd with the source /dev/zero. The order of tools must be separated with: ,
+
+wipe-safe-at --order ddr,ddz /dev/sdX(Y)
+To use same order of tools more than once you can use option --add-wipe-loop or -a. This example will preview wiping with additional 33 rounds the combination of urandom/zero/urandom:
+
+wipe-safe-at --order ddr,ddz,ddr --add-wipe-loop 33 /dev/sdX(Y)
+
+Not recommended but to disable all security options
+
+wipe-safe-at --safety 0 --confirm 0 --no-dry-run --order ddr,ddz /dev/sda
+
+.SH BUGS
+Report all bugs or suggestions via
+.P 
+https://aur.archlinux.org/packages/wipe-safe-at/
+.SH AUTHOR
+Andy Crowd

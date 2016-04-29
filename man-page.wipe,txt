@@ -4,92 +4,94 @@ wipe-safe-at	-	Wipe Safe - Avoid Typo
 .SH SYNOPSIS
 .br
 .B wipe-safe-at 
-.I [options] [path to device | device name]
+[options] [path to device | device name]
 .br
-
 .SH DESCRIPTION
 .B wipe-safe-at 
-is a bash script with additional safety checks before starting wiping tools.
-.br
-By default all safety checks are set to maximum. 
-Without option "--nd" or "--no-dry-run" it will only show what can be done.
-.br
-You can use either only a device name or a full path to it. 
-.B wipe-safe-at
-sdX(Y)
-.B wipe-safe-at
-[options] /dev/sdX(Y)
-
+is a bash script with additional safety checks before starting wiping tools. By default all safety checks are set to maximum. You can use either only a device name or a full path to it. \fB wipe-safe-at\fR sdX(Y), \fB wipe-safe-at\fR [options] /dev/sdX(Y).
 .SH OPTIONS
-.B --help
-- show help message
-.br
+.TP
+.B \--help
+show help message
+.PP
 .IP "\fB\-a , --add-wipe-loop \fR[number\fR]"
-- set amount of additional loops for option --order
-.br
+set amount of additional loops for option \fB--order\fR.
 Defaut = 0
 .IP "\fB\-o , --order \fR[order of methods\fR]"
-- set order of wiping commands
+set order of the wiping commands.
+Example: \fB --order ddr,ddz,cpr,cpz
+.TP
+.B \--sm , --show-me \fR[grep pattern\fR] 
+searching content in this script, supporting grep syntax and must be used only as the first option. Should be used to list available commands that can be used with option \fB --order \fR and line numbers around which you can add own tools. But you must follow bash script and safety syntax.
+Example: \fB wipe-safe-at \fR--show-me -e \fB methods\fR -e \fB NO_DRY\fR -e \fB OPTIONS
+.TP
+.B -c , --confirm \fR[yes/1 , no/0]
+disable confirmation before continue.
 .br	
-Example: --order ddr,ddz,cpr,cpz
-.IP "\fB\--sm , --show-me \fR[grep pattern\fR]"
-- searching content in this script, 
-.br
-    supporting grep syntax and should be used only as the first option.
-.br	
-Helpful to list available patterns that can be used with command "--order"
-.br	
-and find places where you can add own tools.
-.br	
-Example:
-.br
-.B	wipe-safe-at \fR--show-me -e \fB methods\fR -e \fB NO_DRY\fR -e \fB OPTIONS
-	  
--IP -c , --confirm [yes/1 , no/0]	- disable confirmation before continue
 Default = yes
-.IP "\fB\-s , --safety [0/disable , 1/low , 2/max]"
-- set safety level
-	0/disable	- will not check if any of the partitions is mounted
-	1/low       - will stop only if the destination partition is mounted
-	2/max       - will stop if at least one partition is mounted
-Default = max
-.IP "\fB\--nd , --no-dry-run"
-- By default it only shows what can be done
-.SH ADD OWN TOOLS
-.IP WARNING !!!!!! 
-.IP PLEASE KEEP SAFETY SYNTAX WHEN ADDING OWN WIPING TOOLS
+.PP
+.TP
+.B\-s , --safety \fR[0/disable , 1/low , 2/max]
+set safety level
 .br
-This should be infront of each wiping tool:
+0 disable		- will not check if any of the partitions is mounted
 .br
-.P [[ "$NO_DRY" == "YES" ]] &&
-and followed the bash syntax for 
+1 low		- will stop only if the destination partition is mounted
 .br
-case ... esac
-.br
-        command1 | command2 )
-[[\fB\"$NO_DRY"\fR\==\fR\"YES"\fR\]]\fR\&&\fR\
-tool to use
-\fR\        ;;
+2 max		- will stop if at least one partition is mounted
 
-wipe-safe-at --show-me -e methods -e NO_DRY
-And you will get an output of where them are located in the script
-\fR.........
-\fR.........
-\fR LineNumber:	dd-random | ddr | dd ) # methods: wipe partition
-\fR LineNumber:[[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${Use_Logical_Block_Size}" count="${Partition_Sectors}" oflag=direct iflag=nocache -of="/dev/${Path_To_Partition##*/}"
-\fR LineNumber:	dd-zero | ddz ) # methods: wipe partition
-\fR LineNumber:[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${Use_Logical_Block_Size}" count="${Partition_Sectors}" oflag=direct iflag=nocache of="/dev/${Path_To_Partition##*/}"
-\fR .........
-\fR .........
-\fR LineNumber:	dd-random | ddr | dd ) # methods: wipe device
-\fR LineNumber:[[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${Use_Physical_Block_Size}"  count="${Use_Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
-\fR LineNumber:	dd-zero | ddz ) # methods: wipe device
-\fR LineNumber:[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${Use_Physical_Block_Size}"  count="${Use_Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
-\fR .........
-\fR .........
+Default = max
+.TP
+.B --nd , --no-dry-run
+By default it only shows what can be done
+.SH ADD OWN TOOLS
+.TP
+WARNING !!!!!! 
+PLEASE KEEP SAFETY SYNTAX WHEN ADDING OWN WIPING TOOLS
+.PP
+.TP
+This should be infront of each wiping tool:
+[[ "$NO_DRY" == "YES" ]] &&
+.br
+and followed the bash syntax for 
+.B case ... esac
+.TP 14
+Example:
+.B case ... in
+.br
+.B command1 | command2 )
+[[ \fB"$NO_DRY" \fR==\fR "YES" \fR\]] && tool to use
+.br
+;;
+.br
+.B esac
+.TP
+Example:
+.B wipe-safe-at 
+\--show-me \-e methods \-e NO_DRY
+.TP 12
+Output:
+LineNumber:	dd-random | ddr | dd ) # methods: wipe partition
+.br
+LineNumber:[[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${Use_Logical_Block_Size}" count="${Partition_Sectors}" oflag=direct iflag=nocache -of="/dev/${Path_To_Partition##*/}"
+.br
+LineNumber:	dd-zero | ddz ) # methods: wipe partition
+.br
+LineNumber:[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${Use_Logical_Block_Size}" count="${Partition_Sectors}" oflag=direct iflag=nocache of="/dev/${Path_To_Partition##*/}"
+.br
+\fR..........
+.br
+\fR..........
+.br
+LineNumber:	dd-random | ddr | dd ) # methods: wipe device
+.br
+LineNumber:[[ "$NO_DRY" == "YES" ]] && dd if=/dev/urandom bs="${Use_Physical_Block_Size}"  count="${Use_Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
+.br
+LineNumber:	dd-zero | ddz ) # methods: wipe device
+.br
+LineNumber:[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${Use_Physical_Block_Size}"  count="${Use_Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
 
 .SH USAGE
-
 Only to preview what can be done don't use one of the following options: --no-dry-run or --nd in combination with option --order
 First use option --order to chose which of the tools you want to use. To see currently available use as the first option:
 

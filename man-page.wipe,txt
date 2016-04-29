@@ -42,8 +42,8 @@ set safety level
 
 Default = max
 .TP
-.B --nd , --no-dry-run
-By default it only shows what can be done
+.B --nd , --no-dry-run 
+Without this option it will only show what can be done
 .SH ADD OWN TOOLS
 .TP
 WARNING !!!!!! 
@@ -92,20 +92,53 @@ LineNumber:	dd-zero | ddz ) # methods: wipe device
 LineNumber:[[ "$NO_DRY" == "YES" ]] && dd if=/dev/zero bs="${Use_Physical_Block_Size}"  count="${Use_Device_Physical_Sectors}" oflag=direct iflag=nocache of=/dev/"${Main_Device_Name##*/}"
 
 .SH USAGE
-Only to preview what can be done don't use one of the following options: --no-dry-run or --nd in combination with option --order
-First use option --order to chose which of the tools you want to use. To see currently available use as the first option:
+Only to preview what can be done don't use one of the following options: 
+.B \--no-dry-run
+or 
+.B \--nd 
+in combination with option 
+.B \--order
+.
+.PP
+To start wiping you must first use option 
+.B --order
+to chose which of the tools you want to use.
+To see currently available wiping methods preset in the script use as the first option:
+.B wipe-safe-at \--show-me \-e NO_DRY \-e methods
+.TP
+This example will start wiping preview first with 
+.B dd
+and use
+.B /dev/urandom
+as a source, after that will start 
+.B dd 
+with the source
+.B /dev/zero.
+The order of tools must be separated with: \fB","
+.br
+.B wipe-safe-at --order 
+ddr,ddz /dev/sdX(Y)
+.TP
+To use the same order of tools more than once you can use option
+.B\--add-wipe-loop
+or
+.B\-a
+. This example will preview wiping with additional 33 rounds the combination of urandom/zero/urandom:
 
-wipe-safe --show-me -e NO_DRY -e methods
-Then preview how it will look like when starting wiping. This example will start wiping first with dd and /dev/urandom as a source, after that will start dd with the source /dev/zero. The order of tools must be separated with: ,
-
-wipe-safe-at --order ddr,ddz /dev/sdX(Y)
-To use same order of tools more than once you can use option --add-wipe-loop or -a. This example will preview wiping with additional 33 rounds the combination of urandom/zero/urandom:
-
-wipe-safe-at --order ddr,ddz,ddr --add-wipe-loop 33 /dev/sdX(Y)
-
-Not recommended but to disable all security options
-
-wipe-safe-at --safety 0 --confirm 0 --no-dry-run --order ddr,ddz /dev/sda
+.B wipe-safe-at
+\--order ddr,ddz,ddr 
+.B --add-wipe-loop 33 
+/dev/sdX(Y)
+.TP
+Not recommended but to disable all security options use:
+.B wipe-safe-at
+\--safety 
+.B 0
+\--confirm
+.B 0
+\--no-dry-run
+\--order 
+.B ddr,ddz /dev/sda
 
 .SH BUGS
 Report all bugs or suggestions via
@@ -113,3 +146,4 @@ Report all bugs or suggestions via
 https://aur.archlinux.org/packages/wipe-safe-at/
 .SH AUTHOR
 Andy Crowd
+.SH Big thanks for translation to:

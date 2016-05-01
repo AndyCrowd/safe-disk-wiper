@@ -4,7 +4,7 @@
 ###### It is dangerous to wipe a device directly from your working system because it is easy to do a typo of the destination device that will damage the system!
 
 ###### The script will help you by doing checks before starting the wiping.
-###### Only to preview what can be done don't use one of the following options: ``--no-dry-run`` or ``--nd``
+###### Only to preview what can be done don't use one of the following options: ``--no-dry-run`` or ``--nd`` with combination of ``--order``or ``-o``. If one of them is missing it will not start wiping.
 ###### First use option ``--order`` to chose which of the tools you want to use. To see currently available use as the first option:
 ```wipe-safe --show-me -e NO_DRY -e methods```
 ###### Then preview how it will look like when starting wiping. This example will start wiping first with ``dd`` and ``/dev/urandom`` as a source, after that will start ``dd`` with the source ``/dev/zero``. The order of tools must be separated with: ```,```
